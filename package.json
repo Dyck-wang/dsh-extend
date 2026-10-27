@@ -1,6 +1,6 @@
 {
   "name": "dsh-extend",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "DSH 桌面端功能扩展：历史会话清理（/clean）与一键重启（/reboot）",
   "license": "MIT",
   "icon": "./icon.svg",

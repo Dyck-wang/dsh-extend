@@ -59,11 +59,11 @@ DSH 桌面端的功能扩展插件：**历史会话清理**（`/clean`）与**�
    ```powershell
    npm install
    npm run build
-   npm pack          # 生成 dsh-extend-0.1.7.tgz
+   npm pack          # 生成 dsh-extend-0.1.8.tgz
    ```
 
 2. 打开 DSH 桌面端 → **插件** → **添加插件**；
-3. 在输入框粘贴 `dsh-extend-0.1.7.tgz` 的**绝对路径**（或本目录的绝对路径，二者都支持）；
+3. 在输入框粘贴 `dsh-extend-0.1.8.tgz` 的**绝对路径**（或本目录的绝对路径，二者都支持）；
 4. 选择**安装** → **立即启用**；
 5. 首次安装后插件尚未加载，用安装目录里的重启脚本重启一次：
 
@@ -106,6 +106,7 @@ npm run build       # esbuild 构建 lib/ + 产物校验
 | `scripts/` | 构建与产物校验 |
 
 宿主半不 import 任何 `@deepseek-ai/*` 运行时值（只用类型声明），浏览器半是零 external 的 classic script，因此安装到 profile 后不依赖构建期环境。
+
 
 
 

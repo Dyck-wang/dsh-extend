@@ -1,5 +1,7 @@
 # dsh-extend（功能扩展）
 
+[English](README.en.md) | 中文
+
 DSH 桌面端的功能扩展插件：**历史会话清理**（`/clean`）、**一键重启**（`/reboot`）、**生成 AGENTS.md**（`/init`）与**窗口位置记忆**。
 
 - 包名 / bundle id：`dsh-extend`
@@ -102,7 +104,7 @@ npm run smoke   # 用桌面端自带 Host + 临时 DSH_HOME 启动，校验插�
 ```powershell
 npm install
 npm run typecheck   # 仅类型检查（不含 @deepseek-ai/* 运行时依赖）
-npm test            # node --test（含客户端 bundle 与 PowerShell 守护脚本测试）
+npm test            # node --test（含客户端 bundle、重启守护进程与窗口状态测试）
 npm run build       # esbuild 构建 lib/ + 产物校验
 ```
 
@@ -115,10 +117,11 @@ npm run build       # esbuild 构建 lib/ + 产物校验
 | `src/reboot/` | 重启判定、守护进程启动、`relaunch.mjs` |
 | `src/init/` | `/init` 仓库扫描、提示词与 user message 构造 |
 | `src/window/` | 窗口状态读写、`save.ps1` / `restore.ps1` |
-| `src/client/` | 浏览器半：`/clean` 的勾选面板、`/reboot` 的选择器 |
+| `src/client/` | 浏览器半：`/clean` 的勾选面板与 `/reboot` 的直接执行 action |
 | `scripts/` | 构建与产物校验 |
 
 宿主半不 import 任何 `@deepseek-ai/*` 运行时值（只用类型声明），浏览器半是零 external 的 classic script，因此安装到 profile 后不依赖构建期环境。
+
 
 
 

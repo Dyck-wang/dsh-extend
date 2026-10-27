@@ -18,7 +18,8 @@
     "docs",
     "icon.svg",
     "tools",
-    "README.md"
+    "README.md",
+    "README.en.md"
   ],
   "dsh": {
     "bundle": {
@@ -52,3 +53,5 @@
     "typescript": "^5.9.3"
   }
 }
+
+

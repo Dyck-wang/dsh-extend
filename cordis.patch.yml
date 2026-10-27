@@ -1,0 +1,6 @@
+# dsh-extend bundle patch：随包插入本插件的宿主行。
+# `dsh plugin add`（或插件页“添加插件”）安装后，会把本包登记进 profile 的依赖
+# 与 dsh.profile.bundles；此行负责把插件挂到 Loader 树上。
+- insert:
+    - id: dsh-extend
+      name: 'dsh-extend'

@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Feature Extensions",
+    "description": "History-session cleanup and one-click restart for the DSH desktop app",
+    "detail": "docs/DETAIL.md"
+  }
+}

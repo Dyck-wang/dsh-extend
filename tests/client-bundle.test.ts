@@ -23,6 +23,7 @@ interface Decoration {
     kind: string
     options: (session: { sessionId: string }, signal: AbortSignal) => Promise<Option[]>
     onSelect: (option: Option, session: { sessionId: string }) => Promise<void> | void
+    run: (session: { sessionId: string }) => void
   }
 }
 
@@ -159,6 +160,17 @@ test('/clean 统计不可用时只给“全部会话”', async () => {
   assert.equal(options.map(option => option.id).join('|'), 'dialog:all:none')
 })
 
+test('/reboot 是直接执行的 action（无弹窗）', async () => {
+  const harness = await loadClient(async () => ({ ok: true, json: async () => summary }))
+  const reboot = harness.decorations.find(item => item.name === 'reboot')
+  assert.ok(reboot !== undefined)
+  assert.equal(reboot.ui.kind, 'action')
+  reboot.ui.run({ sessionId: 'sdk' })
+  await new Promise(resolve => setTimeout(resolve, 0))
+  assert.deepEqual(harness.commands, ['/reboot'])
+  assert.deepEqual(harness.drafts, [''])
+})
+
 test('没有会话时只给“全部会话”', async () => {
   const empty = {
     ...summary,
@@ -172,55 +184,6 @@ test('没有会话时只给“全部会话”', async () => {
   assert.ok(clean !== undefined)
   const options = await clean.ui.options({ sessionId: 'sdk' }, new AbortController().signal)
   assert.equal(options.map(option => option.id).join('|'), 'dialog:all:none')
-})
-
-test('/reboot 弹窗提供重启与取消，确认后提交 --yes', async () => {
-  const harness = await loadClient(async () => ({ ok: true, json: async () => summary }))
-  const reboot = harness.decorations.find(item => item.name === 'reboot')
-  assert.ok(reboot !== undefined)
-  const options = await reboot.ui.options({ sessionId: 'sdk' }, new AbortController().signal)
-  assert.equal(options.map(option => option.id).join('|'), '/reboot --yes|')
-  assert.ok(options[0]?.confirmation !== undefined)
-
-  await reboot.ui.onSelect(options[0] as Option, { sessionId: 'sdk' })
-  await reboot.ui.onSelect(options[1] as Option, { sessionId: 'sdk' })
-  assert.deepEqual(harness.commands, ['/reboot --yes'])
-  assert.deepEqual(harness.drafts, [''])
-})
-
-test('会话未就绪时重启提交抛错', async () => {
-  const code = await readFile(join(root, 'lib/client.js'), 'utf8')
-  let registration: { factory: (require: (name: string) => unknown) => unknown } | undefined
-  runInNewContext(code, {
-    window: { __ModuleLoader__: { load: (value: typeof registration): void => { registration = value } } },
-    console,
-    URL,
-  })
-  assert.ok(registration !== undefined)
-  const decorations: Decoration[] = []
-  const ctx = {
-    effect: (fn: () => (() => void) | void): (() => void) => {
-      const disposer = fn()
-      return typeof disposer === 'function' ? disposer : () => {}
-    },
-    locale: {
-      register: () => () => {},
-      bind: () => (key: string) => `[${key}]`,
-    },
-    commandUi: {
-      decorate: (decoration: Decoration) => {
-        decorations.push(decoration)
-        return () => {}
-      },
-    },
-    sessions: { binding: () => undefined },
-  }
-  ;(registration.factory(() => undefined) as { apply: (scope: unknown) => void }).apply(ctx)
-  const reboot = decorations.find(item => item.name === 'reboot')
-  assert.ok(reboot !== undefined)
-  await assert.rejects(async () => {
-    await reboot.ui.onSelect({ id: '/reboot --yes', label: 'restart' }, { sessionId: 'missing' })
-  }, /session.missing/u)
 })
 
 

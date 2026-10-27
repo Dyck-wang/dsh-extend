@@ -1,6 +1,6 @@
 # dsh-extend（功能扩展）
 
-DSH 桌面端的功能扩展插件：**历史会话清理**（`/clean`）与**一键重启**（`/reboot`）。
+DSH 桌面端的功能扩展插件：**历史会话清理**（`/clean`）、**一键重启**（`/reboot`）、**生成 AGENTS.md**（`/init`）与**窗口位置记忆**。
 
 - 包名 / bundle id：`dsh-extend`
 - 插件页显示名：**功能扩展**
@@ -44,13 +44,24 @@ DSH 桌面端的功能扩展插件：**历史会话清理**（`/clean`）与**�
 ### `/reboot`：一键重启桌面端
 
 ```
-/reboot            查看是否可重启（不执行）
-/reboot --check    自检：解析主进程 PID / 可执行文件，并启动守护脚本（不杀进程）
-/reboot --yes      立即重启
-/reboot --yes --force  有任务在运行时也强制重启
+/reboot            立即重启（默认就等同 --yes，不再弹确认）
+/reboot --check    自检：解析主进程 PID / 可执行文件，并启动守护进程（不杀进程）
+/reboot --force    有任务在运行时也强制重启
+/reboot --yes      兼容旧写法，与直接 /reboot 相同
 ```
 
 实现方式：先把会话刷盘，再由独立的 Node 守护进程（用桌面端自带的 Electron Node 模式启动）结束 Electron 主进程；Host 在 IPC 断开后优雅收尾，守护进程等它退出后重新拉起同一个可执行文件。之所以不用 PowerShell：实测 Windows 下 detached 启动 powershell.exe 会立即退出、不执行脚本。由于 DSH 没有对外的重启 API，这是唯一的自动化路径。**重启会丢失输入框里未发送的草稿，并中断正在运行的回合。**
+
+### `/init`：生成或更新 AGENTS.md
+
+在仓库里输入 `/init`（可跟一句补充说明）。插件会先扫描仓库（目录树、README、package.json、配置文件、现有 AGENTS.md），
+再把一份带绝对路径的任务消息交给当前智能体；智能体会按需询问，然后写入仓库根目录的 `AGENTS.md`。
+提示词与独立插件 `dsh-init-plugin` 保持一致；合并后不再需要那个插件（两者不能同时启用，命令重名会导致注册失败）。
+
+### 窗口位置记忆
+
+桌面端退出时记住主窗口的位置、大小与最大化状态（`<DSH_HOME>/.dsh-extend/window.json`），下次启动自动恢复；
+`/reboot` 前也会保存一次。保存的窗口若落在已断开的显示器上，会自动夹回当前屏幕范围。仅 Windows 桌面端生效。
 
 ## 安装（插件页「添加插件」）
 
@@ -59,11 +70,11 @@ DSH 桌面端的功能扩展插件：**历史会话清理**（`/clean`）与**�
    ```powershell
    npm install
    npm run build
-   npm pack          # 生成 dsh-extend-0.1.8.tgz
+   npm pack          # 生成 dsh-extend-0.2.2.tgz
    ```
 
 2. 打开 DSH 桌面端 → **插件** → **添加插件**；
-3. 在输入框粘贴 `dsh-extend-0.1.8.tgz` 的**绝对路径**（或本目录的绝对路径，二者都支持）；
+3. 在输入框粘贴 `dsh-extend-0.2.2.tgz` 的**绝对路径**（或本目录的绝对路径，二者都支持）；
 4. 选择**安装** → **立即启用**；
 5. 首次安装后插件尚未加载，用安装目录里的重启脚本重启一次：
 
@@ -78,7 +89,7 @@ DSH 桌面端的功能扩展插件：**历史会话清理**（`/clean`）与**�
 ## 验证
 
 ```powershell
-npm test        # 57 项：参数解析、清单、范围统计、勾选面板、删除、空会话、重启判定、客户端 bundle、PowerShell 守护脚本
+npm test        # 85 项：参数解析、清单、范围统计、勾选面板、删除、空会话、重启判定、`/init` 扫描与提示词、窗口状态、客户端 bundle、重启守护进程
 npm run smoke   # 用桌面端自带 Host + 临时 DSH_HOME 启动，校验插件加载、客户端进启动图、统计/列表/结果路由
 ```
 
@@ -99,13 +110,21 @@ npm run build       # esbuild 构建 lib/ + 产物校验
 
 | 路径 | 职责 |
 |---|---|
-| `src/index.ts` | 宿主入口：注册两个命令与只读统计路由 |
+| `src/index.ts` | 宿主入口：注册三个命令、只读统计路由与窗口记忆 |
 | `src/clean/` | 清单、目录定位、筛选、序号快照、删除执行、统计 |
 | `src/reboot/` | 重启判定、守护进程启动、`relaunch.mjs` |
+| `src/init/` | `/init` 仓库扫描、提示词与 user message 构造 |
+| `src/window/` | 窗口状态读写、`save.ps1` / `restore.ps1` |
 | `src/client/` | 浏览器半：`/clean` 的勾选面板、`/reboot` 的选择器 |
 | `scripts/` | 构建与产物校验 |
 
 宿主半不 import 任何 `@deepseek-ai/*` 运行时值（只用类型声明），浏览器半是零 external 的 classic script，因此安装到 profile 后不依赖构建期环境。
+
+
+
+
+
+
 
 
 

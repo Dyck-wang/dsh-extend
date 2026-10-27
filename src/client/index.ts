@@ -1,11 +1,12 @@
 /**
- * 浏览器半：把 `/clean`、`/reboot` 的裸调用替换为界面。
+ * 浏览器半：把 `/clean` 的裸调用替换为勾选面板。
  *
- * `/clean` 打开勾选面板（按范围列出会话，逐条勾选后删除）；`/reboot` 仍是
- * 两选一的选择器。删除仍通过宿主 `/clean --ids … --yes` 命令执行，生命周期
- * 记在会话日志里，面板再按请求标记取回精确结果。
+ * `/reboot` 不做界面装饰，直接由宿主命令执行（默认即重启）。删除仍通过宿主
+ * `/clean --ids … --yes` 命令执行，生命周期记在会话日志里，面板再按请求标记
+ * 取回精确结果。
  */
 import { en, zh } from './locales.ts'
+import { clearRebootDrafts } from './drafts.ts'
 import { closeCleanDialog, openCleanDialog, type CleanScope, type DeleteSummary } from './dialog.ts'
 import type { ClientContext, ClientSession, SelectOption } from './types.ts'
 
@@ -96,6 +97,49 @@ async function fetchResult(token: string): Promise<DeleteSummary | undefined> {
   return undefined
 }
 
+/** 会话输入面（清空草稿、发送通知用）。 */
+interface ConversationInputFace {
+  readonly input: {
+    for(actx: unknown): {
+      setDraft(text: string): void
+      notify?(level: 'error' | 'info', text: string): void
+    }
+  }
+}
+
+/**
+ * 在会话输入区显示一条错误通知。
+ * @param ctx 客户端上下文。
+ * @param session 会话。
+ * @param message 文案。
+ */
+function notifyError(ctx: ClientContext, session: ClientSession, message: string): void {
+  try {
+    const binding = ctx.sessions.binding(session.sessionId)
+    if (binding === undefined) return
+    const conversation = binding.ctx.get<ConversationInputFace>('conversation')
+    conversation?.input.for(binding.ctx).notify?.('error', message)
+  } catch {
+    // 会话已销毁时忽略。
+  }
+}
+
+/**
+ * 清空指定会话的输入框草稿。
+ * @param ctx 客户端上下文。
+ * @param sessionId 会话 id。
+ */
+function clearDraftFor(ctx: ClientContext, sessionId: string): void {
+  try {
+    const binding = ctx.sessions.binding(sessionId)
+    if (binding === undefined) return
+    const conversation = binding.ctx.get<ConversationInputFace>('conversation')
+    conversation?.input.for(binding.ctx).setDraft('')
+  } catch {
+    // 外壳接口缺失或会话已销毁时保持原样，不影响命令本身。
+  }
+}
+
 /**
  * 主动清空触发命令的草稿。
  *
@@ -105,15 +149,21 @@ async function fetchResult(token: string): Promise<DeleteSummary | undefined> {
  * @param session 触发命令的会话。
  */
 function clearComposerDraft(ctx: ClientContext, session: ClientSession): void {
+  clearDraftFor(ctx, session.sessionId)
+}
+
+/**
+ * 清理重启后残留的 `/reboot` 草稿。
+ *
+ * 强制重启会直接结束主进程，Chromium 可能来不及把“已清空”的草稿落盘；
+ * 下次启动会把旧命令行恢复出来，这里在启动时兜底清一次。
+ * @param ctx 客户端上下文。
+ */
+function sweepStaleRebootDrafts(ctx: ClientContext): void {
   try {
-    const binding = ctx.sessions.binding(session.sessionId)
-    if (binding === undefined) return
-    const conversation = binding.ctx.get<{
-      readonly input: { for(actx: unknown): { setDraft(text: string): void } }
-    }>('conversation')
-    conversation?.input.for(binding.ctx).setDraft('')
+    for (const sessionId of clearRebootDrafts(window.localStorage)) clearDraftFor(ctx, sessionId)
   } catch {
-    // 外壳接口缺失或会话已销毁时保持原样，不影响命令本身。
+    // localStorage 不可用或内容损坏时跳过。
   }
 }
 
@@ -211,6 +261,14 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-extend: dictionaries')
   const t: Translate = ctx.locale.bind(NS)
 
+  // 强制重启可能来不及把清空后的草稿落盘，启动时先清一次，再补一次（等会话加载完）。
+  sweepStaleRebootDrafts(ctx)
+  ctx.effect(() => {
+    if (typeof setTimeout !== 'function') return () => {}
+    const timer = setTimeout(() => { sweepStaleRebootDrafts(ctx) }, 1_500)
+    return () => { clearTimeout(timer) }
+  }, 'dsh-extend: stale reboot draft sweep')
+
   ctx.effect(() => () => { closeCleanDialog() }, 'dsh-extend: dialog cleanup')
 
   ctx.effect(() => ctx.commandUi.decorate({
@@ -246,36 +304,23 @@ export function apply(ctx: ClientContext): void {
     },
   }), 'dsh-extend: /clean decoration')
 
+  // 裸调用 `/reboot` 直接执行（默认即重启），不弹选择器；带参数时仍走宿主命令。
   ctx.effect(() => ctx.commandUi.decorate({
     name: 'reboot',
     available: () => true,
     ui: {
-      kind: 'popupSelect',
-      searchLabels: () => ({
-        placeholder: t('search.placeholder'),
-        empty: t('search.empty'),
-        noResults: t('search.noResults'),
-      }),
-      options: async () => [
-        {
-          id: '/reboot --yes',
-          label: t('reboot.label'),
-          detail: t('reboot.detail'),
-          confirmation: {
-            title: t('reboot.confirm.title'),
-            description: t('reboot.confirm.description'),
-            acknowledgeLabel: t('reboot.confirm.acknowledge'),
-            cancelLabel: t('reboot.confirm.cancel'),
-            confirmLabel: t('reboot.confirm.confirm'),
-          },
-        },
-        { id: '', label: t('reboot.cancel'), detail: t('reboot.cancelDetail') },
-      ],
-      onSelect: async (option, session) => {
-        if (option.id === '') return
+      kind: 'action',
+      run: (session) => {
         clearComposerDraft(ctx, session)
-        await submit(ctx, session, option.id, t)
+        void submit(ctx, session, '/reboot', t).catch((error: unknown) => {
+          notifyError(ctx, session, error instanceof Error ? error.message : String(error))
+        })
       },
     },
-  }), 'dsh-extend: /reboot decoration')
+  }), 'dsh-extend: /reboot action')
 }
+
+
+
+
+

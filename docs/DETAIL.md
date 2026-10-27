@@ -1,6 +1,7 @@
 # Feature Extensions (dsh-extend)
 
-Two everyday operations for the DSH desktop app: **history-session cleanup** and **one-click restart**.
+Three everyday operations for the DSH desktop app: **history-session cleanup**, **one-click restart**,
+**AGENTS.md generation**, plus **window position memory**.
 
 ## Clean history sessions: `/clean`
 
@@ -32,11 +33,25 @@ Two everyday operations for the DSH desktop app: **history-session cleanup** and
 
 ## One-click restart: `/reboot`
 
-- Type `/reboot` and choose "restart now". The app ends and relaunches automatically; the window
-  is back in 1-3 seconds.
-- Command forms: `/reboot --yes`, self-check `/reboot --check`, force while tasks run
-  `/reboot --yes --force`.
+- Type `/reboot` to restart immediately (the default now equals `--yes`; no confirmation popup).
+  The window is back in 1-3 seconds.
+- Self-check `/reboot --check`; force while tasks run `/reboot --force`; `/reboot --yes` stays compatible.
 - Restarting interrupts running turns and drops unsent composer drafts.
+
+## Generate AGENTS.md: `/init`
+
+- Type `/init` in a repository (optionally followed by a note). The plugin scans the repository
+  (tree, README, package.json, configs, existing AGENTS.md) and hands a task message with the
+  absolute target path to the current agent; the agent asks when needed and writes the root `AGENTS.md`.
+- Behavior matches the standalone `dsh-init-plugin`; do not enable both plugins at once — the
+  duplicate command name fails registration.
+
+## Window position memory
+
+- On a normal quit the plugin remembers the main window's position, size and maximized state, and
+  restores them on the next start.
+- `/reboot` also saves before restarting; a forced kill keeps the last saved state.
+- A saved rect that falls on a disconnected display is clamped back into the current screen.
 
 ## Install
 

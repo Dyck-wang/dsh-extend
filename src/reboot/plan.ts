@@ -46,7 +46,7 @@ export function planReboot(env: RebootEnvironment): RebootPlan {
 
 /** `/reboot` 参数。 */
 export interface RebootArgs {
-  readonly mode: 'status' | 'check' | 'run' | 'help'
+  readonly mode: 'check' | 'run' | 'help'
   readonly force: boolean
   readonly errors: readonly string[]
 }
@@ -84,18 +84,20 @@ export function parseRebootInput(rawInput: string): RebootArgs {
     }
   }
   if (check && yes) errors.push('--check 与 --yes 不能同时使用')
-  if (force && !yes) errors.push('--force 只能与 --yes 一起使用')
-  const mode = help ? 'help' : check ? 'check' : yes ? 'run' : 'status'
+  if (check && force) errors.push('--check 与 --force 不能同时使用')
+  // 默认（不带参数）就是直接重启，等价于 --yes；--yes 保留兼容。
+  const mode = help ? 'help' : check ? 'check' : 'run'
   return { mode, force, errors }
 }
 
 /** `/reboot` 用法说明。 */
 export const REBOOT_USAGE = [
   '/reboot 用法',
-  '  /reboot            查看当前是否可重启（不执行）',
+  '  /reboot            立即重启 DSH 桌面端（默认等同 --yes）',
   '  /reboot --check    自检：解析主进程 PID/可执行文件并启动守护脚本（不杀进程）',
-  '  /reboot --yes      立即重启 DSH 桌面端',
-  '  /reboot --yes --force  有任务在运行时也强制重启',
+  '  /reboot --force    有任务在运行时也强制重启',
+  '  /reboot --yes      与直接 /reboot 相同（兼容旧写法）',
   '',
   '说明：重启会结束当前桌面进程后自动拉起；未发送的输入框草稿会丢失。',
 ].join('\n')
+

@@ -112,6 +112,14 @@ export interface Agents {
   list(): readonly AgentLike[]
 }
 
+/** 命令处理器拿到的 agent（可读取会话 cwd、可 steer 注入消息）。 */
+export interface CommandAgent extends AgentLike {
+  readonly session?: {
+    readonly header?: { readonly cwd?: string }
+  }
+  steer(message: unknown): void
+}
+
 /** 后台任务注册表（只用于判断是否有活跃任务）。 */
 export interface JobLike {
   readonly status?: string
@@ -146,7 +154,7 @@ export interface WebServer {
 
 /** 命令定义（宿主注册表）。 */
 export interface CommandInvocation {
-  readonly agent: AgentLike
+  readonly agent: CommandAgent
   readonly rawInput: string
   readonly signal: AbortSignal
 }

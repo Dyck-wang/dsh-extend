@@ -1,4 +1,4 @@
-/** `/clean` 与 `/reboot` 界面文案（中文）。 */
+/** `/clean` 界面文案（中文）。 */
 export const zh: Record<string, string> = {
   'search.placeholder': '搜索清理方式…',
   'search.empty': '没有可清理的会话',
@@ -44,22 +44,13 @@ export const zh: Record<string, string> = {
   'dialog.failedList': '未能删除：',
   'dialog.done': '完成',
 
-  'reboot.label': '立即重启桌面端',
-  'reboot.detail': '结束当前进程并自动拉起；未发送的草稿会丢失',
-  'reboot.cancel': '取消',
-  'reboot.cancelDetail': '保持当前运行状态',
-  'reboot.confirm.title': '重启 DSH 桌面端',
-  'reboot.confirm.description': '当前窗口会关闭并在 1-3 秒后重新出现，正在运行的回合会被中断。',
-  'reboot.confirm.acknowledge': '重启会中断当前回合',
-  'reboot.confirm.cancel': '取消',
-  'reboot.confirm.confirm': '立即重启',
 
   'session.missing': '当前会话尚未就绪，暂时无法执行。',
   'command.failed': '命令执行失败。',
   'command.unavailable': '当前 Host 没有提供该命令。',
 }
 
-/** `/clean` 与 `/reboot` 界面文案（英文，其余语言的回退）。 */
+/** `/clean` 界面文案（英文，其余语言的回退）。 */
 export const en: Record<string, string> = {
   'search.placeholder': 'Search cleanup actions…',
   'search.empty': 'No sessions to clean',
@@ -105,20 +96,13 @@ export const en: Record<string, string> = {
   'dialog.failedList': 'Not deleted:',
   'dialog.done': 'Done',
 
-  'reboot.label': 'Restart the desktop app',
-  'reboot.detail': 'Ends this process and relaunches it; unsent drafts are lost',
-  'reboot.cancel': 'Cancel',
-  'reboot.cancelDetail': 'Keep the app running',
-  'reboot.confirm.title': 'Restart DSH desktop',
-  'reboot.confirm.description': 'The window closes and reappears in 1-3 seconds. Running turns are interrupted.',
-  'reboot.confirm.acknowledge': 'Restarting interrupts the running turn',
-  'reboot.confirm.cancel': 'Cancel',
-  'reboot.confirm.confirm': 'Restart now',
 
   'session.missing': 'This session is not ready yet.',
   'command.failed': 'The command failed.',
   'command.unavailable': 'This host does not provide the command.',
 }
+
+
 
 
 

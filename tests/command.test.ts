@@ -14,7 +14,7 @@ const DAY = 86_400_000
 const results = new ResultStore()
 
 function invocation(rawInput: string, agentId = 'agent-1'): CommandInvocation {
-  return { agent: { id: agentId }, rawInput, signal: new AbortController().signal }
+  return { agent: { id: agentId, steer: () => {} }, rawInput, signal: new AbortController().signal }
 }
 
 function textOf(result: CommandResult): string {
@@ -240,5 +240,6 @@ test('--ids 中已不存在的会话被跳过并记录', async () => {
     await cleanup()
   }
 })
+
 
 

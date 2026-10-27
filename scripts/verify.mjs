@@ -29,6 +29,8 @@ for (const rel of [
   'lib/index.js',
   'lib/client.js',
   'lib/relaunch.mjs',
+  'lib/window-save.ps1',
+  'lib/window-restore.ps1',
   'cordis.patch.yml',
   'locale/zh.json',
   'locale/en.json',
@@ -66,4 +68,5 @@ if (failures.length > 0) {
   process.exit(1)
 }
 console.log('[dsh-extend] 产物校验通过')
+
 

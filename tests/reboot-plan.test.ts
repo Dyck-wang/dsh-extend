@@ -42,13 +42,18 @@ test('缺少桌面 exe 提示时回退到 execPath', () => {
 })
 
 test('parseRebootInput', () => {
-  assert.equal(parseRebootInput('').mode, 'status')
+  // 默认即重启，等同于 --yes
+  assert.equal(parseRebootInput('').mode, 'run')
+  assert.equal(parseRebootInput('   ').mode, 'run')
+  assert.equal(parseRebootInput('--yes').mode, 'run')
   assert.equal(parseRebootInput('--check').mode, 'check')
   const run = parseRebootInput('--yes --force')
   assert.equal(run.mode, 'run')
   assert.equal(run.force, true)
+  assert.equal(parseRebootInput('--force').mode, 'run')
+  assert.equal(parseRebootInput('--force').force, true)
   assert.equal(parseRebootInput('--help').mode, 'help')
   assert.ok(parseRebootInput('--check --yes').errors.length > 0)
-  assert.ok(parseRebootInput('--force').errors.length > 0)
+  assert.ok(parseRebootInput('--check --force').errors.length > 0)
   assert.ok(parseRebootInput('--nope').errors.length > 0)
 })

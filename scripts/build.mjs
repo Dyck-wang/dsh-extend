@@ -58,6 +58,9 @@ await build({
 })
 
 await cp(join(root, 'src/reboot/relaunch.mjs'), join(lib, 'relaunch.mjs'))
-console.log('[dsh-extend] built lib/index.js, lib/client.js, lib/relaunch.mjs')
+await cp(join(root, 'src/window/save.ps1'), join(lib, 'window-save.ps1'))
+await cp(join(root, 'src/window/restore.ps1'), join(lib, 'window-restore.ps1'))
+console.log('[dsh-extend] built lib/index.js, lib/client.js, lib/relaunch.mjs, lib/window-*.ps1')
+
 
 

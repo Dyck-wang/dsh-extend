@@ -4,7 +4,9 @@ import { runCleanCommand, SnapshotStore } from './clean/command.ts'
 import { ResultStore } from './clean/results.ts'
 import { buildSessionScope, isCleanScope } from './clean/scope.ts'
 import { buildSummary } from './clean/summary.ts'
+import { registerInit } from './init/index.ts'
 import { runRebootCommand } from './reboot/index.ts'
+import { installWindowState } from './window/index.ts'
 
 /** 插件诊断名。 */
 export const name = 'dsh-extend'
@@ -69,6 +71,8 @@ function admitGet(req: HttpRequestLike, res: HttpResponseLike): URLSearchParams 
  * @param ctx 宿主上下文。
  */
 export function apply(ctx: HostContext): void {
+  installWindowState(ctx)
+
   const snapshots = new SnapshotStore()
   const results = new ResultStore()
 
@@ -89,6 +93,8 @@ export function apply(ctx: HostContext): void {
       handler: invocation => runRebootCommand(ctx, invocation),
     }), 'dsh-extend: /reboot command')
   })
+
+  registerInit(ctx)
 
   ctx.inject(['webServer'], (scope) => {
     const webServer = scope.webServer
@@ -141,3 +147,5 @@ export function apply(ctx: HostContext): void {
     }), 'dsh-extend: clean result route')
   })
 }
+
+

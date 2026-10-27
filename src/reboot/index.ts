@@ -16,6 +16,7 @@ import {
   type SessionStore,
 } from '../types.ts'
 import { shortId } from '../util.ts'
+import { saveWindowStateSync } from '../window/index.ts'
 import { parseRebootInput, planReboot, REBOOT_USAGE, type RebootPlan } from './plan.ts'
 
 /** 守护进程入口（构建时复制到 lib/ 与本文件同目录）。 */
@@ -199,19 +200,6 @@ async function runHelper(options: {
   return { ready: true, detail: detail ?? '' }
 }
 
-/** 当前状态描述。 */
-function statusText(plan: Extract<RebootPlan, { ok: true }>, tasks: TaskSnapshot, exePath: string): string {
-  return [
-    '/reboot 状态：可以重启',
-    `- Electron 主进程 PID：${plan.mainPid}`,
-    `- 可执行文件：${exePath}`,
-    `- 活跃任务：${tasks.active ? `${tasks.runningAgents} 个会话在运行、${tasks.activeJobs} 个后台任务未结束` : '无'}`,
-    '',
-    '执行：/reboot --yes（会结束进程并自动拉起，未发送的草稿会丢失）',
-    '自检：/reboot --check（只验证守护进程，不结束进程）',
-  ].join('\n')
-}
-
 /**
  * 执行一次 `/reboot` 调用。
  * @param ctx 宿主上下文。
@@ -246,10 +234,6 @@ export async function runRebootCommand(ctx: HostContext, invocation: CommandInvo
 
   const tasks = inspectTasks(ctx)
 
-  if (args.mode === 'status') {
-    return { kind: 'success', text: statusText(plan, tasks, exePath) }
-  }
-
   if (args.mode === 'check') {
     const result = await runHelper({ mainPid: plan.mainPid, exePath, dryRun: true })
     if (!result.ready) return { kind: 'error', text: `/reboot 自检失败：${result.detail}` }
@@ -267,11 +251,13 @@ export async function runRebootCommand(ctx: HostContext, invocation: CommandInvo
     return {
       kind: 'error',
       text: `当前有任务在运行（${tasks.runningAgents} 个会话、${tasks.activeJobs} 个后台任务）。`
-        + '如果确认要中断它们并重启，请执行 /reboot --yes --force。',
+        + '如果确认要中断它们并重启，请执行 /reboot --force。',
     }
   }
 
   await flushSessions(ctx)
+  // 重启前记下窗口位置：守护进程会直接结束主进程，Host 未必能走到清理回调。
+  saveWindowStateSync()
   const result = await runHelper({ mainPid: plan.mainPid, exePath, dryRun: false })
   if (!result.ready) return { kind: 'error', text: `重启失败：${result.detail}` }
   return {
@@ -279,3 +265,4 @@ export async function runRebootCommand(ctx: HostContext, invocation: CommandInvo
     text: `正在重启 DSH 桌面端…\n- ${result.detail}\n- 窗口会在 1-3 秒后重新出现。`,
   }
 }
+

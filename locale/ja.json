@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "機能拡張",
+    "description": "DSH デスクトップ版に履歴セッションのクリーンアップ、ワンクリック再起動、AGENTS.md 生成、システムプロンプト管理を追加します",
+    "detail": "docs/DETAIL.md"
+  }
+}

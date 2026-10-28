@@ -1,10 +1,12 @@
 /** 宿主插件入口：注册 `/clean`、`/reboot` 与面板使用的只读数据路由。 */
-import type { HostContext, HttpRequestLike, HttpResponseLike } from './types.ts'
+import { admitGet, writeJson } from './http.ts'
+import type { HostContext } from './types.ts'
 import { runCleanCommand, SnapshotStore } from './clean/command.ts'
 import { ResultStore } from './clean/results.ts'
 import { buildSessionScope, isCleanScope } from './clean/scope.ts'
 import { buildSummary } from './clean/summary.ts'
 import { registerInit } from './init/index.ts'
+import { installPromptManager } from './prompt/index.ts'
 import { runRebootCommand } from './reboot/index.ts'
 import { installWindowState } from './window/index.ts'
 
@@ -19,59 +21,12 @@ export const SESSIONS_PATH = '/api/dsh-extend/clean/sessions'
 export const RESULT_PATH = '/api/dsh-extend/clean/result'
 
 /**
- * 只接受本机回环请求（桌面端页面经自定义协议转发，来源是 127.0.0.1）。
- * @param req 请求。
- * @returns 是否来自本机。
- */
-function isLoopback(req: HttpRequestLike): boolean {
-  const address = req.socket?.remoteAddress ?? ''
-  return address === '127.0.0.1'
-    || address === '::1'
-    || address === '::ffff:127.0.0.1'
-    || address.startsWith('127.')
-}
-
-/**
- * 写 JSON 响应。
- * @param res 响应。
- * @param status HTTP 状态码。
- * @param value 响应体。
- */
-function writeJson(res: HttpResponseLike, status: number, value: unknown): void {
-  if (res.writableEnded === true) return
-  const body = JSON.stringify(value)
-  res.statusCode = status
-  res.setHeader('content-type', 'application/json; charset=utf-8')
-  res.setHeader('cache-control', 'no-store')
-  res.setHeader('x-content-type-options', 'nosniff')
-  res.end(body)
-}
-
-/**
- * 只读 GET 路由的公共校验。
- * @param req 请求。
- * @param res 响应。
- * @returns 通过时返回 URL 查询参数，否则已写响应并返回 undefined。
- */
-function admitGet(req: HttpRequestLike, res: HttpResponseLike): URLSearchParams | undefined {
-  if (req.method !== undefined && req.method !== 'GET' && req.method !== 'HEAD') {
-    res.setHeader('allow', 'GET, HEAD')
-    writeJson(res, 405, { ok: false, error: 'method not allowed' })
-    return undefined
-  }
-  if (!isLoopback(req)) {
-    writeJson(res, 403, { ok: false, error: 'loopback only' })
-    return undefined
-  }
-  return new URL(req.url ?? '/', 'http://localhost').searchParams
-}
-
-/**
  * 挂载本插件。
  * @param ctx 宿主上下文。
  */
 export function apply(ctx: HostContext): void {
   installWindowState(ctx)
+  installPromptManager(ctx)
 
   const snapshots = new SnapshotStore()
   const results = new ResultStore()
@@ -147,5 +102,8 @@ export function apply(ctx: HostContext): void {
     }), 'dsh-extend: clean result route')
   })
 }
+
+
+
 
 

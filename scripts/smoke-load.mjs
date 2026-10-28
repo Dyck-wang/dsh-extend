@@ -103,6 +103,18 @@ try {
   const resultResponse = await fetch(`${origin}/api/dsh-extend/clean/result?request=smoketest0001`)
   const resultPayload = await resultResponse.json().catch(() => undefined)
 
+  const promptsResponse = await fetch(`${origin}/api/dsh-extend/prompts`)
+  const prompts = await promptsResponse.json().catch(() => undefined)
+  const promptTextResponse = await fetch(`${origin}/api/dsh-extend/prompts/text?name=harness:identity`)
+  const promptText = await promptTextResponse.json().catch(() => undefined)
+  const promptAddResponse = await fetch(`${origin}/api/dsh-extend/prompts/save`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ action: 'add', title: 'smoke', text: 'SMOKE_PROMPT' }),
+  })
+  const promptAdd = await promptAddResponse.json().catch(() => undefined)
+  const promptsAfter = await (await fetch(`${origin}/api/dsh-extend/prompts`)).json().catch(() => undefined)
+
   console.log(JSON.stringify({
     ready: true,
     hasClientEntry,
@@ -122,6 +134,14 @@ try {
     listSuggested: list?.rows?.some(row => row.suggested === true),
     resultStatus: resultResponse.status,
     resultFound: resultPayload?.found,
+    promptsStatus: promptsResponse.status,
+    promptSections: prompts?.assembled?.length,
+    promptHasIdentity: prompts?.assembled?.some(section => section.name === 'harness:identity') === true,
+    promptTextStatus: promptTextResponse.status,
+    promptTextSize: typeof promptText?.text === 'string' ? promptText.text.length : 0,
+    promptAddStatus: promptAddResponse.status,
+    promptAddOk: promptAdd?.ok === true,
+    promptCustomCount: promptsAfter?.custom?.length,
   }, null, 2))
 
   success = hasClientEntry
@@ -135,6 +155,13 @@ try {
     && list?.rows?.every(row => row.suggested === false) === true
     && resultResponse.status === 200
     && resultPayload?.found === false
+    && promptsResponse.status === 200
+    && prompts?.assembled?.some(section => section.name === 'harness:identity') === true
+    && promptTextResponse.status === 200
+    && typeof promptText?.text === 'string'
+    && promptText.text.length > 0
+    && promptAddResponse.status === 200
+    && promptsAfter?.custom?.some(item => item.title === 'smoke') === true
     && (emptyHome || summary.totals.sessions > 0)
   if (!success) console.error('冒烟校验未通过')
 } catch (error) {
@@ -149,5 +176,6 @@ try {
   await rm(home, { recursive: true, force: true }).catch(() => undefined)
   process.exit(success ? 0 : 1)
 }
+
 
 

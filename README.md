@@ -60,8 +60,36 @@ DSH 桌面端的功能扩展插件：**历史会话清理**（`/clean`）、**�
 再把一份带绝对路径的任务消息交给当前智能体；智能体会按需询问，然后写入仓库根目录的 `AGENTS.md`。
 提示词与独立插件 `dsh-init-plugin` 保持一致；合并后不再需要那个插件（两者不能同时启用，命令重名会导致注册失败）。
 
-### 窗口位置记忆
+### `/prompt`：管理系统提示词
 
+```
+/prompt                     打开管理面板（已组装段 + 自定义项）
+/prompt list                列出已组装段与自定义项
+/prompt show <name>         查看某段当前全文
+/prompt set <name> <text>   覆盖已组装段文本（留空则还原该段）
+/prompt disable <name>      禁用已组装段
+/prompt enable <name>       重新启用已组装段
+/prompt reset <name|--all>  还原某段 / 全部已组装段
+/prompt add <title> <text>  新增自定义提示词
+/prompt remove <id>         删除自定义提示词
+/prompt on|off <id>         启用/停用自定义提示词
+```
+
+- 「已组装提示词」是 DSH 在运行时从**内核、桌面端与已安装插件**收集并排序的段（如 `harness:identity`、
+  `mcp:board-deploy`、`ui:deliverable-file-references`），并非只含 DSH 官方内置内容；
+  面板只按段覆盖/禁用，不改安装文件，“还原”即回到当前组合的默认结果。
+- 自定义提示词追加在系统提示词末尾，可随时启用/停用。
+- 修改在下一轮模型请求生效；Agent 预设若使用固定完整提示词（`complete` 段），不参与覆盖。
+- 覆盖状态保存在 `<DSH_HOME>/.dsh-extend/prompts.json`（写入前保留 `.bak`）。
+
+### 多语言
+
+- 插件文案已备好 DSH 的 8 种语言字典：中文、English、日本語、Español、Français、Deutsch、Русский、Português，插件页也有对应的 `locale/*.json`；
+- **不改动 DSH 的语言列表**：实际可选语言由桌面端构建决定。当前构建只注册中文/English，官方包也只带中英字典，切到其他语言会回落英文；
+- 桌面端后续支持这些语言后，插件文案会自动跟随，无需改代码；
+- 宿主的命令说明与结果文本仍是中文（DSH 的 locale 服务只覆盖浏览器半）。
+
+### 窗口位置记忆
 桌面端退出时记住主窗口的位置、大小与最大化状态（`<DSH_HOME>/.dsh-extend/window.json`），下次启动自动恢复；
 `/reboot` 前也会保存一次。保存的窗口若落在已断开的显示器上，会自动夹回当前屏幕范围。仅 Windows 桌面端生效。
 
@@ -72,11 +100,11 @@ DSH 桌面端的功能扩展插件：**历史会话清理**（`/clean`）、**�
    ```powershell
    npm install
    npm run build
-   npm pack          # 生成 dsh-extend-0.2.2.tgz
+   npm pack          # 生成 dsh-extend-<version>.tgz
    ```
 
 2. 打开 DSH 桌面端 → **插件** → **添加插件**；
-3. 在输入框粘贴 `dsh-extend-0.2.2.tgz` 的**绝对路径**（或本目录的绝对路径，二者都支持）；
+3. 在输入框粘贴 `dsh-extend-<version>.tgz` 的**绝对路径**（或本目录的绝对路径，二者都支持）；
 4. 选择**安装** → **立即启用**；
 5. 首次安装后插件尚未加载，用安装目录里的重启脚本重启一次：
 
@@ -91,7 +119,7 @@ DSH 桌面端的功能扩展插件：**历史会话清理**（`/clean`）、**�
 ## 验证
 
 ```powershell
-npm test        # 85 项：参数解析、清单、范围统计、勾选面板、删除、空会话、重启判定、`/init` 扫描与提示词、窗口状态、客户端 bundle、重启守护进程
+npm test        # 106 项：参数解析、清单、范围统计、勾选面板、删除、空会话、重启判定、`/init` 扫描与提示词、窗口状态、客户端 bundle、重启守护进程
 npm run smoke   # 用桌面端自带 Host + 临时 DSH_HOME 启动，校验插件加载、客户端进启动图、统计/列表/结果路由
 ```
 
@@ -112,15 +140,27 @@ npm run build       # esbuild 构建 lib/ + 产物校验
 
 | 路径 | 职责 |
 |---|---|
-| `src/index.ts` | 宿主入口：注册三个命令、只读统计路由与窗口记忆 |
+| `src/index.ts` | 宿主入口：注册四个命令、只读统计路由与窗口记忆 |
 | `src/clean/` | 清单、目录定位、筛选、序号快照、删除执行、统计 |
 | `src/reboot/` | 重启判定、守护进程启动、`relaunch.mjs` |
 | `src/init/` | `/init` 仓库扫描、提示词与 user message 构造 |
+| `src/prompt/` | `/prompt` 系统提示词覆盖、状态持久化、面板路由 |
 | `src/window/` | 窗口状态读写、`save.ps1` / `restore.ps1` |
-| `src/client/` | 浏览器半：`/clean` 的勾选面板与 `/reboot` 的直接执行 action |
+| `src/client/` | 浏览器半：`/clean` 勾选面板、`/prompt` 管理面板、`/reboot` 直接执行 action |
 | `scripts/` | 构建与产物校验 |
 
 宿主半不 import 任何 `@deepseek-ai/*` 运行时值（只用类型声明），浏览器半是零 external 的 classic script，因此安装到 profile 后不依赖构建期环境。
+
+
+
+
+
+
+
+
+
+
+
 
 
 

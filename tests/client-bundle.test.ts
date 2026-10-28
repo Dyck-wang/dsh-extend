@@ -133,7 +133,7 @@ test('client bundle 以 dsh-extend 注册并导出 apply/inject', async () => {
   assert.equal(harness.registered[0]?.ns, 'dsh-extend')
   assert.ok(harness.registered[0]?.dictionaries.zh !== undefined)
   assert.ok(harness.registered[0]?.dictionaries.en !== undefined)
-  assert.deepEqual(harness.decorations.map(item => item.name).sort(), ['clean', 'reboot'])
+  assert.deepEqual(harness.decorations.map(item => item.name).sort(), ['clean', 'prompt', 'reboot'])
 })
 
 test('/clean 弹窗按统计生成勾选面板入口', async () => {
@@ -185,5 +185,8 @@ test('没有会话时只给“全部会话”', async () => {
   const options = await clean.ui.options({ sessionId: 'sdk' }, new AbortController().signal)
   assert.equal(options.map(option => option.id).join('|'), 'dialog:all:none')
 })
+
+
+
 
 

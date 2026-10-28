@@ -1,8 +1,9 @@
 {
   "meta": {
     "title": "功能扩展",
-    "description": "为 DSH 桌面端提供历史会话清理、一键重启与 AGENTS.md 生成",
+    "description": "为 DSH 桌面端提供历史会话清理、一键重启、AGENTS.md 生成与系统提示词管理",
     "detail": "docs/DETAIL.zh.md"
   }
 }
+
 

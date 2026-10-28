@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Extensions de fonctionnalités",
+    "description": "Nettoyage de l'historique des sessions, redémarrage en un clic, génération d'AGENTS.md et gestion des prompts système pour l'application DSH",
+    "detail": "docs/DETAIL.md"
+  }
+}

@@ -46,6 +46,16 @@ Three everyday operations for the DSH desktop app: **history-session cleanup**, 
 - Behavior matches the standalone `dsh-init-plugin`; do not enable both plugins at once — the
   duplicate command name fails registration.
 
+## System prompt manager: `/prompt`
+
+- Type `/prompt` to open the manager: it lists the assembled sections DSH collects from the core, the desktop shell and installed plugins, and lets you
+  edit, disable or restore each one; the "Custom" tab adds/edits/deletes prompts appended at the end.
+- Assembled sections are overridden by name (the installation is never edited); "Restore all defaults"
+  returns to the DSH default, and each section can also be restored individually.
+- Changes apply to the next model request. Agent presets that use a fixed complete prompt (`complete`
+  section) bypass these overrides.
+- State lives in `<DSH_HOME>/.dsh-extend/prompts.json`, with a `.bak` kept before each write.
+
 ## Window position memory
 
 - On a normal quit the plugin remembers the main window's position, size and maximized state, and
@@ -58,4 +68,5 @@ Three everyday operations for the DSH desktop app: **history-session cleanup**, 
 Open **Plugins → Add plugin** and paste the absolute path of this package (a directory or a
 `.tgz` both work), then choose **Enable now**. The plugin is not loaded until the app restarts:
 run `tools\restart-dsh.cmd` once after the first install. After that `/reboot` is available.
+
 

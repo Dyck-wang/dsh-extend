@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Funktionserweiterungen",
+    "description": "Bereinigung des Sitzungsverlaufs, Neustart mit einem Klick, AGENTS.md-Erstellung und System-Prompt-Verwaltung für die DSH-Desktop-App",
+    "detail": "docs/DETAIL.md"
+  }
+}

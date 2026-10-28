@@ -1,8 +1,9 @@
 {
   "meta": {
     "title": "Feature Extensions",
-    "description": "History-session cleanup, one-click restart, and AGENTS.md generation for the DSH desktop app",
+    "description": "History-session cleanup, one-click restart, AGENTS.md generation, and system-prompt management for the DSH desktop app",
     "detail": "docs/DETAIL.md"
   }
 }
+
 

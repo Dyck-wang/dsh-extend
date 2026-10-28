@@ -6,7 +6,9 @@
  * 取回精确结果。
  */
 import { en, zh } from './locales.ts'
+import { de, es, fr, ja, pt, ru } from './locales-more.ts'
 import { clearRebootDrafts } from './drafts.ts'
+import { closePromptDialog, openPromptDialog } from './promptDialog.ts'
 import { closeCleanDialog, openCleanDialog, type CleanScope, type DeleteSummary } from './dialog.ts'
 import type { ClientContext, ClientSession, SelectOption } from './types.ts'
 
@@ -258,7 +260,8 @@ export const inject = ['commandUi', 'sessions', 'locale']
  * @param ctx 客户端上下文。
  */
 export function apply(ctx: ClientContext): void {
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-extend: dictionaries')
+  // 只注册字典，不改 DSH 的语言列表：可选语言由桌面端构建决定，等构建支持 ja/es/fr/de/ru/pt 后自动生效。
+  ctx.effect(() => ctx.locale.register(NS, { zh, en, ja, es, fr, de, ru, pt }), 'dsh-extend: dictionaries')
   const t: Translate = ctx.locale.bind(NS)
 
   // 强制重启可能来不及把清空后的草稿落盘，启动时先清一次，再补一次（等会话加载完）。
@@ -269,7 +272,7 @@ export function apply(ctx: ClientContext): void {
     return () => { clearTimeout(timer) }
   }, 'dsh-extend: stale reboot draft sweep')
 
-  ctx.effect(() => () => { closeCleanDialog() }, 'dsh-extend: dialog cleanup')
+  ctx.effect(() => () => { closeCleanDialog(); closePromptDialog() }, 'dsh-extend: dialog cleanup')
 
   ctx.effect(() => ctx.commandUi.decorate({
     name: 'clean',
@@ -293,6 +296,7 @@ export function apply(ctx: ClientContext): void {
       onSelect: (option, session) => {
         if (!option.id.startsWith('dialog:')) return
         clearComposerDraft(ctx, session)
+        closePromptDialog()
         const [, scope, preselect] = option.id.split(':')
         openCleanDialog({
           scope: (scope ?? 'all') as CleanScope,
@@ -318,7 +322,20 @@ export function apply(ctx: ClientContext): void {
       },
     },
   }), 'dsh-extend: /reboot action')
+
+  // 裸调用 /prompt 打开系统提示词管理面板。
+  ctx.effect(() => ctx.commandUi.decorate({
+    name: 'prompt',
+    available: () => true,
+    ui: {
+      kind: 'action',
+      run: (session) => { clearComposerDraft(ctx, session); closeCleanDialog(); openPromptDialog({ t }) },
+    },
+  }), 'dsh-extend: /prompt action')
 }
+
+
+
 
 
 

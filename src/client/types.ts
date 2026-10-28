@@ -64,3 +64,4 @@ export interface ClientContext {
   readonly commandUi: { decorate(decoration: CommandDecoration): () => void }
   readonly sessions: ClientSessions
 }
+

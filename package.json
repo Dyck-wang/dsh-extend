@@ -1,7 +1,7 @@
 {
   "name": "dsh-extend",
-  "version": "0.2.2",
-  "description": "DSH 桌面端功能扩展：历史会话清理（/clean）、一键重启（/reboot）、AGENTS.md 生成（/init）与窗口位置记忆",
+  "version": "0.3.0",
+  "description": "DSH 桌面端功能扩展：历史会话清理（/clean）、一键重启（/reboot）、AGENTS.md 生成（/init）、系统提示词管理（/prompt）与窗口位置记忆",
   "license": "MIT",
   "icon": "./icon.svg",
   "type": "module",
@@ -53,5 +53,3 @@
     "typescript": "^5.9.3"
   }
 }
-
-

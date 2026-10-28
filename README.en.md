@@ -58,8 +58,36 @@ How it works: sessions are flushed, then a standalone Node helper (started in th
 
 Type `/init` in a repository (optionally followed by a short note). The plugin scans the repository (tree, README, package.json, configs, existing AGENTS.md) and hands a task message with absolute paths to the current agent; the agent asks when needed and writes `AGENTS.md` at the repository root. The prompt matches the standalone `dsh-init-plugin`; after the merge that plugin is no longer needed (do not enable both — duplicate command names fail registration).
 
-### Window position memory
+### `/prompt`: manage the system prompt
 
+```
+/prompt                     open the manager panel (assembled sections + custom prompts)
+/prompt list                list assembled sections and custom prompts
+/prompt show <name>         print one section's current text
+/prompt set <name> <text>   override an assembled section (empty text restores it)
+/prompt disable <name>      hide an assembled section
+/prompt enable <name>       re-enable it
+/prompt reset <name|--all>  restore one section / all assembled sections
+/prompt add <title> <text>  add a custom prompt
+/prompt remove <id>         delete a custom prompt
+/prompt on|off <id>         enable/disable a custom prompt
+```
+
+- "Assembled" sections are the ones DSH collects at runtime from the **core, the desktop shell and installed plugins**
+  (`harness:identity`, `mcp:board-deploy`, `ui:deliverable-file-references`, ...), not just DSH built-ins.
+  The plugin overrides/removes them by name and never edits the installation; "restore" returns to the current default.
+- Custom prompts are appended to the end of the system prompt and can be enabled or disabled at any time.
+- Changes apply to the next model request. Agent presets that use a fixed complete prompt (`complete` section) bypass these overrides.
+- State lives in `<DSH_HOME>/.dsh-extend/prompts.json` (a `.bak` is kept before each write).
+
+### Languages
+
+- The plugin ships dictionaries for DSH's 8 built-in languages: 中文, English, 日本語, Español, Français, Deutsch, Русский, Português, plus matching `locale/*.json` files.
+- **DSH's language list is left untouched**: the selectable languages come from the desktop build. The current build registers only Chinese/English and its packages ship only zh/en dictionaries, so other selections fall back to English.
+- Once the desktop build supports those languages, the plugin copy follows automatically with no code change.
+- Host command descriptions and result text remain Chinese (DSH's locale service covers the browser half only).
+
+### Window position memory
 On exit the plugin remembers the main window's position, size and maximized state (`<DSH_HOME>/.dsh-extend/window.json`) and restores it on the next start; `/reboot` also saves before restarting. A saved rect that falls on a disconnected display is clamped back into the current screen. Windows desktop only.
 
 ## Install (Plugins → Add plugin)
@@ -69,11 +97,11 @@ On exit the plugin remembers the main window's position, size and maximized stat
    ```powershell
    npm install
    npm run build
-   npm pack          # produces dsh-extend-0.2.2.tgz
+   npm pack          # produces dsh-extend-<version>.tgz
    ```
 
 2. Open the DSH desktop app → **Plugins** → **Add plugin**;
-3. Paste the **absolute path** of `dsh-extend-0.2.2.tgz` (a directory path also works);
+3. Paste the **absolute path** of `dsh-extend-<version>.tgz` (a directory path also works);
 4. Choose **Install** → **Enable now**;
 5. The plugin is not loaded until the app restarts; use the restart script inside the installed package:
 
@@ -88,7 +116,7 @@ Uninstall: disable it on the Plugins page, then delete it.
 ## Verification
 
 ```powershell
-npm test        # 85 tests: parsing, inventory, scopes, picker, deletion, empty sessions, reboot planning, /init scan & prompt, window state, client bundle, restart helper
+npm test        # 106 tests: parsing, inventory, scopes, picker, deletion, empty sessions, reboot planning, /init scan & prompt, window state, client bundle, restart helper
 npm run smoke   # boots the real desktop Host with a temp DSH_HOME; checks plugin loading, client entry, summary/list/result routes
 ```
 
@@ -108,12 +136,23 @@ Code layout:
 
 | Path | Responsibility |
 |---|---|
-| `src/index.ts` | host entry: three commands, read-only routes and window memory |
+| `src/index.ts` | host entry: four commands, read-only routes and window memory |
 | `src/clean/` | inventory, directory location, filters, sequence snapshots, deletion, statistics |
 | `src/reboot/` | reboot planning, helper launch, `relaunch.mjs` |
 | `src/init/` | `/init` repository scan, prompt and user-message construction |
+| `src/prompt/` | `/prompt` system-prompt overrides, state and panel routes |
 | `src/window/` | window state read/write, `save.ps1` / `restore.ps1` |
-| `src/client/` | browser half: the `/clean` picker and the direct `/reboot` action |
+| `src/client/` | browser half: `/clean` picker, `/prompt` manager, direct `/reboot` action |
 | `scripts/` | build and artifact verification |
 
 The host half never imports `@deepseek-ai/*` runtime values (types only), and the browser half is a zero-external classic script, so an installed profile needs no build-time environment.
+
+
+
+
+
+
+
+
+
+

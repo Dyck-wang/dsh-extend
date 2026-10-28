@@ -56,6 +56,12 @@ Three everyday operations for the DSH desktop app: **history-session cleanup**, 
   section) bypass these overrides.
 - State lives in `<DSH_HOME>/.dsh-extend/prompts.json`, with a `.bak` kept before each write.
 
+## Languages
+
+- The plugin ships dictionaries for 8 languages: 中文, English, 日本語, Español, Français, Deutsch, Русский, Português.
+- The selectable languages come from the desktop build (the current build registers Chinese/English only); the plugin does not change DSH's language list.
+- Host command descriptions and result text remain Chinese.
+
 ## Window position memory
 
 - On a normal quit the plugin remembers the main window's position, size and maximized state, and

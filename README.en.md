@@ -2,7 +2,7 @@
 
 [中文](README.md) | English
 
-Feature extensions for the DSH desktop app: **history-session cleanup** (`/clean`), **one-click restart** (`/reboot`), **AGENTS.md generation** (`/init`), and **window position memory**.
+Feature extensions for the DSH desktop app: **history-session cleanup** (`/clean`), **one-click restart** (`/reboot`), **AGENTS.md generation** (`/init`), **system-prompt management** (`/prompt`), and **window position memory**; the UI ships dictionaries for 8 languages.
 
 - Package / bundle id: `dsh-extend`
 - Plugins page name: **功能扩展** (Feature Extensions)
@@ -116,7 +116,7 @@ Uninstall: disable it on the Plugins page, then delete it.
 ## Verification
 
 ```powershell
-npm test        # 106 tests: parsing, inventory, scopes, picker, deletion, empty sessions, reboot planning, /init scan & prompt, window state, client bundle, restart helper
+npm test        # 106 tests: parsing, inventory, scopes, picker, deletion, empty sessions, reboot planning, /init scan & prompt, /prompt overrides/commands/dialog, 8-language dictionaries, window state, client bundle, restart helper
 npm run smoke   # boots the real desktop Host with a temp DSH_HOME; checks plugin loading, client entry, summary/list/result routes
 ```
 
@@ -146,6 +146,7 @@ Code layout:
 | `scripts/` | build and artifact verification |
 
 The host half never imports `@deepseek-ai/*` runtime values (types only), and the browser half is a zero-external classic script, so an installed profile needs no build-time environment.
+
 
 
 

@@ -66,7 +66,11 @@ Three everyday operations for the DSH desktop app: **history-session cleanup**, 
 
 - On a normal quit the plugin remembers the main window's position, size and maximized state, and
   restores them on the next start.
+- The main process hides the window before quitting, and the save script enumerates the process's
+  top-level windows, so hidden windows are found and tray quits are covered too.
 - `/reboot` also saves before restarting; a forced kill keeps the last saved state.
+- The saved rect is restored exactly as long as it still intersects a monitor (it may be partially
+  off-screen); it is clamped only when it lies entirely on a disconnected display.
 - A saved rect that falls on a disconnected display is clamped back into the current screen.
 
 ## Install

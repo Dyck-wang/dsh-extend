@@ -88,7 +88,7 @@ Type `/init` in a repository (optionally followed by a short note). The plugin s
 - Host command descriptions and result text remain Chinese (DSH's locale service covers the browser half only).
 
 ### Window position memory
-On exit the plugin remembers the main window's position, size and maximized state (`<DSH_HOME>/.dsh-extend/window.json`) and restores it on the next start; `/reboot` also saves before restarting. A saved rect that falls on a disconnected display is clamped back into the current screen. Windows desktop only.
+On exit the plugin remembers the main window's position, size and maximized state (`<DSH_HOME>/.dsh-extend/window.json`) and restores it on the next start; `/reboot` also saves before restarting. The main process hides the window before quitting, and the save script enumerates the process's top-level windows, so hidden windows are found. The saved rect is restored exactly as long as it still intersects a monitor (it may be partially off-screen); it is clamped only when it lies entirely on a disconnected display. Windows desktop only.
 
 ## Install (Plugins → Add plugin)
 
@@ -146,6 +146,7 @@ Code layout:
 | `scripts/` | build and artifact verification |
 
 The host half never imports `@deepseek-ai/*` runtime values (types only), and the browser half is a zero-external classic script, so an installed profile needs no build-time environment.
+
 
 
 

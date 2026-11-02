@@ -2,7 +2,7 @@
 
 [中文](README.md) | English
 
-Feature extensions for the DSH desktop app: **history-session cleanup** (`/clean`), **one-click restart** (`/reboot`), **AGENTS.md generation** (`/init`), **system-prompt management** (`/prompt`), and **window position memory**; the UI ships dictionaries for 8 languages.
+Feature extensions for the DSH desktop app: **history-session cleanup** (`/clean`), **one-click restart** (`/reboot`), **AGENTS.md generation** (`/init`), **system-prompt management** (`/prompt`), **WSL 9P transparent fallback** (`write` / `edit`), and **window position memory**; the UI ships dictionaries for 8 languages.
 
 - Package / bundle id: `dsh-extend`
 - Plugins page name: **功能扩展** (Feature Extensions)
@@ -80,6 +80,35 @@ Type `/init` in a repository (optionally followed by a short note). The plugin s
 - Changes apply to the next model request. Agent presets that use a fixed complete prompt (`complete` section) bypass these overrides.
 - State lives in `<DSH_HOME>/.dsh-extend/prompts.json` (a `.bak` is kept before each write).
 
+### WSL network drives: transparent fallback
+
+WSL's `\\wsl.localhost\...` / `\\wsl$\...` mounts (including mapped drives such as `W:`) are 9P filesystems:
+they reject hard links and Windows security descriptors. DSH's built-in `write` / `edit` publish atomically
+(temp file + hard link) and copy the destination DACL, so they fail on those paths:
+
+- `write` creating a file: `ENOTSUP ... link ...`;
+- `write` / `edit` overwriting an existing file: `GetFileSecurityW EIO`.
+
+The plugin listens to the global `tools/execute` waterfall: before a `write` / `edit` call it resolves the path;
+when the target is a WSL 9P mount it writes directly with `fs.writeFile` and returns a success result, otherwise
+it delegates to the original tool. Models keep using `write` / `edit`; arguments and presentation are unchanged.
+
+**DSH contract risk**: `tools/execute` documents that a wrapper may change only `exec.signal`; this uses the
+broader "return a success result" behavior (DSH's `normalizeDispatchResult` re-validates and re-renders `value`
+through the original tool's output). Re-check after a DSH upgrade.
+
+**Sandbox impact**: the 9P branch calls `fs.writeFile` directly and does not go through `ctx.fs`'s sandbox
+backend. In `workspace-write` / `read-only` mode, writes to WSL paths are therefore not checked or blocked by
+the sandbox policy; under `danger-full-access` there is no additional difference. If you need sandbox
+enforcement, avoid targeting WSL paths for writes, or wait for the upstream `writeFileAtomic` 9P fix.
+
+The transparent fallback only recognizes `\\wsl.localhost\` / `\\wsl$\` (`W:` is resolved to a UNC path first);
+other filesystems without hard-link support are not detected automatically. Ordinary local paths still go
+entirely through the built-in tools.
+
+Note: the distro name behind `W:` is not necessarily `Ubuntu`; when using a UNC path, take the exact name
+from `wsl -l` (for example `Ubuntu-18.04`).
+
 ### Languages
 
 - The plugin ships dictionaries for DSH's 8 built-in languages: 中文, English, 日本語, Español, Français, Deutsch, Русский, Português, plus matching `locale/*.json` files.
@@ -116,7 +145,7 @@ Uninstall: disable it on the Plugins page, then delete it.
 ## Verification
 
 ```powershell
-npm test        # 106 tests: parsing, inventory, scopes, picker, deletion, empty sessions, reboot planning, /init scan & prompt, /prompt overrides/commands/dialog, 8-language dictionaries, window state, client bundle, restart helper
+npm test        # 119 tests: parsing, inventory, scopes, picker, deletion, empty sessions, reboot planning, /init scan & prompt, /prompt overrides/commands/dialog, WSL tools/execute interception, 8-language dictionaries, window state, client bundle, restart helper
 npm run smoke   # boots the real desktop Host with a temp DSH_HOME; checks plugin loading, client entry, summary/list/result routes
 ```
 
@@ -136,11 +165,12 @@ Code layout:
 
 | Path | Responsibility |
 |---|---|
-| `src/index.ts` | host entry: four commands, read-only routes and window memory |
+| `src/index.ts` | host entry: four commands, WSL `tools/execute` interception, read-only routes and window memory |
 | `src/clean/` | inventory, directory location, filters, sequence snapshots, deletion, statistics |
 | `src/reboot/` | reboot planning, helper launch, `relaunch.mjs` |
 | `src/init/` | `/init` repository scan, prompt and user-message construction |
 | `src/prompt/` | `/prompt` system-prompt overrides, state and panel routes |
+| `src/wsl/` | transparent `write` / `edit` overrides and 9P path detection |
 | `src/window/` | window state read/write, `save.ps1` / `restore.ps1` |
 | `src/client/` | browser half: `/clean` picker, `/prompt` manager, direct `/reboot` action |
 | `scripts/` | build and artifact verification |

@@ -9,6 +9,7 @@ import { registerInit } from './init/index.ts'
 import { installPromptManager } from './prompt/index.ts'
 import { runRebootCommand } from './reboot/index.ts'
 import { installWindowState } from './window/index.ts'
+import { installWslExecuteHook } from './wsl/transparent.ts'
 
 /** 插件诊断名。 */
 export const name = 'dsh-extend'
@@ -27,6 +28,7 @@ export const RESULT_PATH = '/api/dsh-extend/clean/result'
 export function apply(ctx: HostContext): void {
   installWindowState(ctx)
   installPromptManager(ctx)
+  installWslExecuteHook(ctx)
 
   const snapshots = new SnapshotStore()
   const results = new ResultStore()

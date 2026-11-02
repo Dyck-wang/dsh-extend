@@ -2,7 +2,7 @@
 
 [English](README.en.md) | 中文
 
-DSH 桌面端的功能扩展插件：**历史会话清理**（`/clean`）、**一键重启**（`/reboot`）、**生成 AGENTS.md**（`/init`）、**系统提示词管理**（`/prompt`）与**窗口位置记忆**；界面文案提供 8 种语言字典。
+DSH 桌面端的功能扩展插件：**历史会话清理**（`/clean`）、**一键重启**（`/reboot`）、**生成 AGENTS.md**（`/init`）、**系统提示词管理**（`/prompt`）、**WSL 9P 透明回退**（`write` / `edit`）与**窗口位置记忆**；界面文案提供 8 种语言字典。
 
 - 包名 / bundle id：`dsh-extend`
 - 插件页显示名：**功能扩展**
@@ -82,6 +82,29 @@ DSH 桌面端的功能扩展插件：**历史会话清理**（`/clean`）、**�
 - 修改在下一轮模型请求生效；Agent 预设若使用固定完整提示词（`complete` 段），不参与覆盖。
 - 覆盖状态保存在 `<DSH_HOME>/.dsh-extend/prompts.json`（写入前保留 `.bak`）。
 
+### WSL 网络驱动器：透明回退
+
+WSL 的 `\\wsl.localhost\...` / `\\wsl$\...` 映射（包括 `W:` 这类盘符）是 9P 文件系统：不支持硬链接，也不支持
+Windows 安全描述符。DSH 内置的 `write` / `edit` 走原子写（临时文件 + 硬链接）并复制 DACL，在这类路径上会失败：
+
+- `write` 新建文件：`ENOTSUP ... link ...`；
+- `write` / `edit` 覆盖已有文件：`GetFileSecurityW EIO`。
+
+插件在全局监听 `tools/execute`：`write` / `edit` 调用前先解析路径，目标是 WSL 9P 映射就直接
+`fs.writeFile` 写并返回成功结果，否则调用原工具。模型仍然使用 `write` / `edit`，参数和呈现不变。
+
+**DSH 契约风险**：`tools/execute` 的文档约定 wrapper 只能改 `exec.signal`；这里用到了“返回成功结果”的
+扩展行为（DSH 的 `normalizeDispatchResult` 会按原工具 output 重新校验并渲染 `value`）。DSH 升级后需要复验。
+
+**沙箱影响**：9P 分支直接调用 `fs.writeFile`，不经过 `ctx.fs` 的沙箱后端。因此 `workspace-write` / `read-only`
+模式下，WSL 路径的写入不会被沙箱策略检查或拦截；`danger-full-access` 下没有额外差别。如果需要在沙箱限制下
+工作，请避免把 WSL 路径作为写入目标，或等 DSH 上游修复 `writeFileAtomic` 的 9P 兼容性。
+
+透明覆盖只识别 `\\wsl.localhost\` / `\\wsl$\`（`W:` 盘符会先解析成 UNC）；其他不支持硬链接的文件系统不会
+自动识别。普通本地路径仍完全走内置工具。
+
+注意：`W:` 映射的发行版名不一定是 `Ubuntu`，用 UNC 时以 `wsl -l` 的实际名称为准（例如 `Ubuntu-18.04`）。
+
 ### 多语言
 
 - 插件文案已备好 DSH 的 8 种语言字典：中文、English、日本語、Español、Français、Deutsch、Русский、Português，插件页也有对应的 `locale/*.json`；
@@ -119,7 +142,7 @@ DSH 桌面端的功能扩展插件：**历史会话清理**（`/clean`）、**�
 ## 验证
 
 ```powershell
-npm test        # 106 项：参数解析、清单、范围统计、勾选面板、删除、空会话、重启判定、`/init` 扫描与提示词、`/prompt` 覆盖/命令/面板、8 语言字典、窗口状态、客户端 bundle、重启守护进程
+npm test        # 119 项：参数解析、清单、范围统计、勾选面板、删除、空会话、重启判定、`/init` 扫描与提示词、`/prompt` 覆盖/命令/面板、WSL tools/execute 拦截、8 语言字典、窗口状态、客户端 bundle、重启守护进程
 npm run smoke   # 用桌面端自带 Host + 临时 DSH_HOME 启动，校验插件加载、客户端进启动图、统计/列表/结果路由
 ```
 
@@ -140,11 +163,12 @@ npm run build       # esbuild 构建 lib/ + 产物校验
 
 | 路径 | 职责 |
 |---|---|
-| `src/index.ts` | 宿主入口：注册四个命令、只读统计路由与窗口记忆 |
+| `src/index.ts` | 宿主入口：注册四个命令、WSL `tools/execute` 拦截、只读统计路由与窗口记忆 |
 | `src/clean/` | 清单、目录定位、筛选、序号快照、删除执行、统计 |
 | `src/reboot/` | 重启判定、守护进程启动、`relaunch.mjs` |
 | `src/init/` | `/init` 仓库扫描、提示词与 user message 构造 |
 | `src/prompt/` | `/prompt` 系统提示词覆盖、状态持久化、面板路由 |
+| `src/wsl/` | 透明 `write` / `edit` 覆盖与 9P 路径判定 |
 | `src/window/` | 窗口状态读写、`save.ps1` / `restore.ps1` |
 | `src/client/` | 浏览器半：`/clean` 勾选面板、`/prompt` 管理面板、`/reboot` 直接执行 action |
 | `scripts/` | 构建与产物校验 |

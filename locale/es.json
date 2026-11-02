@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Extensiones de funciones",
-    "description": "Limpieza del historial de sesiones, reinicio con un clic, generación de AGENTS.md y gestión de prompts del sistema para la app de escritorio de DSH",
+    "description": "Limpieza del historial de sesiones, reinicio con un clic, generación de AGENTS.md, gestión de prompts del sistema, fallback de write/edit en WSL y memoria de posición de la ventana para la app de escritorio de DSH",
     "detail": "docs/DETAIL.md"
   }
 }

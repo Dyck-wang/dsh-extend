@@ -1,6 +1,6 @@
 # 功能扩展（dsh-extend）
 
-为 DSH 桌面端补上三个日常操作：**清理历史会话**、**一键重启**、**生成 AGENTS.md**，外加**窗口位置记忆**。
+为 DSH 桌面端补上这些日常能力：**清理历史会话**、**一键重启**、**生成 AGENTS.md**、**管理系统提示词**、**WSL 路径写入**，外加**窗口位置记忆**。
 
 ## 历史会话清理 `/clean`
 
@@ -50,6 +50,18 @@
 - 插件文案提供 8 种语言字典：中文、English、日本語、Español、Français、Deutsch、Русский、Português；
 - 实际可选语言由桌面端构建决定（当前构建仅中文/English），插件不改动 DSH 的语言列表；
 - 宿主的命令说明与结果文本仍为中文。
+
+## WSL 路径写入
+
+- WSL 的 `\\wsl.localhost\...` / `\\wsl$\...` 映射是 9P 文件系统，不支持硬链接和安全描述符。DSH 内置的
+  `write` / `edit` 新建时因 `link` 失败（`ENOTSUP`），覆盖时因复制 DACL 失败（`GetFileSecurityW EIO`）。
+- 插件在全局监听 `tools/execute`：`write` / `edit` 调用前先解析路径，目标是 WSL 9P 映射就用普通
+  `fs.writeFile` 直接写并返回成功结果，否则完全走原工具。模型仍然使用 `write` / `edit`，参数和呈现不变。
+- `tools/execute` 的文档约定 wrapper 只能改 `exec.signal`；这里用到了“返回成功结果”的扩展行为，
+  DSH 升级后需要复验。
+- **沙箱影响**：9P 分支直接调用 `fs.writeFile`，不经过 `ctx.fs` 的沙箱后端；`workspace-write` / `read-only`
+  模式下 WSL 路径的写入不会被沙箱策略检查或拦截，`danger-full-access` 下没有额外差别。
+- 拦截只识别 `\\wsl.localhost\` / `\\wsl$\`（`W:` 会先解析成 UNC）；普通本地路径仍用内置工具。
 
 ## 窗口位置记忆
 

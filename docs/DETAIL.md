@@ -1,7 +1,7 @@
 # Feature Extensions (dsh-extend)
 
-Three everyday operations for the DSH desktop app: **history-session cleanup**, **one-click restart**,
-**AGENTS.md generation**, plus **window position memory**.
+Everyday capabilities for the DSH desktop app: **history-session cleanup**, **one-click restart**,
+**AGENTS.md generation**, **system-prompt management**, **WSL path writes**, plus **window position memory**.
 
 ## Clean history sessions: `/clean`
 
@@ -62,6 +62,22 @@ Three everyday operations for the DSH desktop app: **history-session cleanup**, 
 - The selectable languages come from the desktop build (the current build registers Chinese/English only); the plugin does not change DSH's language list.
 - Host command descriptions and result text remain Chinese.
 
+## WSL path writes
+
+- WSL's `\\wsl.localhost\...` / `\\wsl$\...` mounts are 9P filesystems: they reject hard links and security
+  descriptors. DSH's built-in `write` / `edit` fail on creation with `ENOTSUP ... link ...` and on overwrite
+  with `GetFileSecurityW EIO` (DACL copy).
+- The plugin listens to the global `tools/execute` waterfall: it resolves the path first and writes directly
+  with `fs.writeFile` when the target is a WSL 9P mount, returning a success result; otherwise the original tool
+  runs. Models keep using `write` / `edit`; arguments and presentation are unchanged.
+- `tools/execute` documents that a wrapper may change only `exec.signal`; this uses the broader "return a
+  success result" behavior. Re-check after a DSH upgrade.
+- **Sandbox impact**: the 9P branch calls `fs.writeFile` directly and does not go through `ctx.fs`'s sandbox
+  backend; in `workspace-write` / `read-only` mode, writes to WSL paths are not checked or blocked by the
+  sandbox policy. Under `danger-full-access` there is no additional difference.
+- The interception only recognizes `\\wsl.localhost\` / `\\wsl$\` (`W:` is resolved to a UNC path first);
+  ordinary local paths still use the built-in tools.
+
 ## Window position memory
 
 - On a normal quit the plugin remembers the main window's position, size and maximized state, and
@@ -71,7 +87,6 @@ Three everyday operations for the DSH desktop app: **history-session cleanup**, 
 - `/reboot` also saves before restarting; a forced kill keeps the last saved state.
 - The saved rect is restored exactly as long as it still intersects a monitor (it may be partially
   off-screen); it is clamped only when it lies entirely on a disconnected display.
-- A saved rect that falls on a disconnected display is clamped back into the current screen.
 
 ## Install
 

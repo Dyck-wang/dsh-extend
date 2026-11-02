@@ -172,6 +172,43 @@ export interface CommandRuntime {
   register(definition: CommandDefinition): () => void
 }
 
+/** 文件系统目标（只列本插件使用的字段）。 */
+export interface FsTargetLike {
+  readonly targetKey: string
+  readonly displayPath: string
+}
+
+/** `ctx.fs` 的最小面（只用于把用户路径解析成真实目标）。 */
+export interface FileSystemLike {
+  resolve(path: string): Promise<FsTargetLike>
+}
+
+/** 工具执行上下文（只列取消信号）。 */
+export interface ToolRunContextLike {
+  readonly signal?: AbortSignal
+}
+
+/** 模型可见的文本内容块。 */
+export interface ToolContentBlockLike {
+  readonly type: 'text'
+  readonly text: string
+}
+
+/** 工具输出声明。 */
+export interface ToolOutputLike {
+  readonly schema: Record<string, unknown>
+  render(args: unknown, value: unknown): readonly ToolContentBlockLike[]
+}
+
+/** 工具定义（宿主 `ctx.tools.register` 接受的最小形状）。 */
+export interface ToolDefinitionLike {
+  readonly name: string
+  readonly description: string
+  readonly parameters: Record<string, unknown>
+  readonly output: ToolOutputLike
+  execute(args: unknown, exec: ToolRunContextLike): Promise<unknown>
+}
+
 /** 宿主 cordis 上下文的最小面。 */
 export interface HostContext {
   readonly root?: HostContext

@@ -2,6 +2,6 @@
   "meta": {
     "title": "Funktionserweiterungen",
     "description": "Bereinigung des Sitzungsverlaufs, Neustart mit einem Klick, AGENTS.md-Erstellung, System-Prompt-Verwaltung, WSL-write/edit-Fallback und Fensterpositionsspeicherung für die DSH-Desktop-App",
-    "detail": "docs/DETAIL.md"
+    "detail": "README.en.md"
   }
 }

@@ -1,5 +1,6 @@
 /** 宿主插件入口：注册 `/clean`、`/reboot` 与面板使用的只读数据路由。 */
-import { admitGet, writeJson } from './http.ts'
+import { admitGet, admitPost, readJsonBody, writeJson } from './http.ts'
+import type { BodyRequestLike } from './http.ts'
 import type { HostContext } from './types.ts'
 import { runCleanCommand, SnapshotStore } from './clean/command.ts'
 import { ResultStore } from './clean/results.ts'
@@ -10,6 +11,12 @@ import { installPromptManager } from './prompt/index.ts'
 import { runRebootCommand } from './reboot/index.ts'
 import { installWindowState } from './window/index.ts'
 import { installWslExecuteHook } from './wsl/transparent.ts'
+import {
+  AUTH_GUARD_PATH,
+  authGuardEnabled,
+  installAuthCookieGuard,
+  setAuthGuardEnabled,
+} from './auth/guard.ts'
 
 /** 插件诊断名。 */
 export const name = 'dsh-extend'
@@ -26,6 +33,7 @@ export const RESULT_PATH = '/api/dsh-extend/clean/result'
  * @param ctx 宿主上下文。
  */
 export function apply(ctx: HostContext): void {
+  installAuthCookieGuard(ctx)
   installWindowState(ctx)
   installPromptManager(ctx)
   installWslExecuteHook(ctx)
@@ -102,6 +110,44 @@ export function apply(ctx: HostContext): void {
         writeJson(res, 200, result === undefined ? { ok: true, found: false } : { ok: true, found: true, result })
       },
     }), 'dsh-extend: clean result route')
+
+    scope.effect(() => webServer.register({
+      kind: 'exact',
+      path: AUTH_GUARD_PATH,
+      handler: (req, res) => {
+        if (req.method === 'POST') {
+          if (!admitPost(req, res)) return
+          void readJsonBody(req as BodyRequestLike)
+            .then((body) => {
+              const enabled = typeof body === 'object' && body !== null
+                ? (body as { enabled?: unknown }).enabled
+                : undefined
+              if (typeof enabled !== 'boolean') {
+                writeJson(res, 400, { ok: false, error: 'enabled must be a boolean' })
+                return
+              }
+              try {
+                setAuthGuardEnabled(enabled)
+                writeJson(res, 200, { ok: true, enabled: authGuardEnabled() })
+              } catch (cause: unknown) {
+                writeJson(res, 500, {
+                  ok: false,
+                  error: cause instanceof Error ? cause.message : String(cause),
+                })
+              }
+            })
+            .catch((cause: unknown) => {
+              writeJson(res, 400, {
+                ok: false,
+                error: cause instanceof Error ? cause.message : String(cause),
+              })
+            })
+          return
+        }
+        if (admitGet(req, res) === undefined) return
+        writeJson(res, 200, { ok: true, enabled: authGuardEnabled() })
+      },
+    }), 'dsh-extend: auth guard route')
   })
 }
 

@@ -2,7 +2,7 @@
   "meta": {
     "title": "功能扩展",
     "description": "为 DSH 桌面端提供历史会话清理、一键重启、AGENTS.md 生成、系统提示词管理、WSL 路径的 write/edit 透明回退与窗口位置记忆",
-    "detail": "docs/DETAIL.zh.md"
+    "detail": "README.md"
   }
 }
 

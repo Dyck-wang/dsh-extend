@@ -73,6 +73,13 @@ export const zh: Record<string, string> = {
 
   'session.missing': '当前会话尚未就绪，暂时无法执行。',
   'command.failed': '命令执行失败。',
+  'authGuard.title': '认证 Cookie 清理',
+  'authGuard.description': '在 303 换 cookie 时移除旧端口的 dsh-auth-*，并在桌面端退出后兜底清理。',
+  'authGuard.enabled': '已启用',
+  'authGuard.disabled': '已禁用',
+  'authGuard.hint': '关闭后立即停止 303 清理，退出后的兜底清理也会跳过；修改立即生效。',
+  'authGuard.loading': '读取中…',
+  'authGuard.failed': '保存失败：{error}',
   'command.unavailable': '当前 Host 没有提供该命令。',
 }
 
@@ -151,6 +158,13 @@ export const en: Record<string, string> = {
 
   'session.missing': 'This session is not ready yet.',
   'command.failed': 'The command failed.',
+  'authGuard.title': 'Auth cookie cleanup',
+  'authGuard.description': 'Expire stale dsh-auth-* cookies on the 303 token exchange and clean up after the desktop exits.',
+  'authGuard.enabled': 'Enabled',
+  'authGuard.disabled': 'Disabled',
+  'authGuard.hint': 'Turning this off stops the 303 pruning immediately and skips the exit-time cleanup. Changes apply immediately.',
+  'authGuard.loading': 'Loading…',
+  'authGuard.failed': 'Save failed: {error}',
   'command.unavailable': 'This host does not provide the command.',
 }
 

@@ -17,8 +17,8 @@ async function withTemp(): Promise<{ root: string; cleanup: () => Promise<void> 
 }
 
 test('isWslTarget 识别 WSL 的 9P UNC 路径', () => {
-  assert.equal(isWslTarget('\\\\wsl.localhost\\Ubuntu-18.04\\home\\dyck\\ws'), true)
-  assert.equal(isWslTarget('\\\\wsl$\\Ubuntu\\home\\dyck'), true)
+  assert.equal(isWslTarget('\\\\wsl.localhost\\Ubuntu\\home\\user\\ws'), true)
+  assert.equal(isWslTarget('\\\\wsl$\\Ubuntu\\home\\user'), true)
   assert.equal(isWslTarget('\\\\WSL.LOCALHOST\\Ubuntu\\home'), true)
   assert.equal(isWslTarget('\\\\?\\UNC\\wsl.localhost\\Ubuntu\\home'), true)
   assert.equal(isWslTarget('C:\\Users\\84983\\file.txt'), false)

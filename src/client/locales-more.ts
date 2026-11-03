@@ -75,6 +75,13 @@ export const ja: Record<string, string> = {
 
   'session.missing': 'セッションの準備ができていないため実行できません。',
   'command.failed': 'コマンドの実行に失敗しました。',
+  'authGuard.title': '認証 Cookie のクリーンアップ',
+  'authGuard.description': '303 のトークン交換時に古い dsh-auth-* を削除し、デスクトップ終了後にバックアップとして整理します。',
+  'authGuard.enabled': '有効',
+  'authGuard.disabled': '無効',
+  'authGuard.hint': '無効にすると 303 の削除も終了後の整理も即座に停止します。変更はすぐに反映されます。',
+  'authGuard.loading': '読み込み中…',
+  'authGuard.failed': '保存に失敗しました：{error}',
   'command.unavailable': 'この Host はそのコマンドを提供していません。',
 }
 
@@ -153,6 +160,13 @@ export const es: Record<string, string> = {
 
   'session.missing': 'La sesión aún no está lista.',
   'command.failed': 'El comando falló.',
+  'authGuard.title': 'Limpieza de cookies de autenticación',
+  'authGuard.description': 'Elimina cookies dsh-auth-* antiguas en el intercambio 303 y limpia al cerrar la aplicación de escritorio.',
+  'authGuard.enabled': 'Activada',
+  'authGuard.disabled': 'Desactivada',
+  'authGuard.hint': 'Al desactivarla se detiene el filtrado 303 y también se omite la limpieza al salir. Se aplica de inmediato.',
+  'authGuard.loading': 'Cargando…',
+  'authGuard.failed': 'No se pudo guardar: {error}',
   'command.unavailable': 'Este host no proporciona el comando.',
 }
 
@@ -231,6 +245,13 @@ export const fr: Record<string, string> = {
 
   'session.missing': "La session n'est pas encore prête.",
   'command.failed': 'La commande a échoué.',
+  'authGuard.title': "Nettoyage des cookies d'authentification",
+  'authGuard.description': "Supprime les anciens cookies dsh-auth-* lors de l'échange 303 et nettoie à la fermeture du bureau.",
+  'authGuard.enabled': 'Activé',
+  'authGuard.disabled': 'Désactivé',
+  'authGuard.hint': "La désactivation arrête immédiatement le filtrage 303 et ignore aussi le nettoyage à la fermeture. Prise en compte immédiate.",
+  'authGuard.loading': 'Chargement…',
+  'authGuard.failed': "Échec de l'enregistrement : {error}",
   'command.unavailable': "Cet hôte ne fournit pas la commande.",
 }
 
@@ -309,6 +330,13 @@ export const de: Record<string, string> = {
 
   'session.missing': 'Die Sitzung ist noch nicht bereit.',
   'command.failed': 'Der Befehl ist fehlgeschlagen.',
+  'authGuard.title': 'Authentifizierungs-Cookies bereinigen',
+  'authGuard.description': 'Entfernt alte dsh-auth-*-Cookies beim 303-Token-Tausch und bereinigt nach dem Beenden der Desktop-App.',
+  'authGuard.enabled': 'Aktiviert',
+  'authGuard.disabled': 'Deaktiviert',
+  'authGuard.hint': 'Deaktivieren stoppt sofort die 303-Bereinigung und überspringt auch die Bereinigung beim Beenden. Änderungen gelten sofort.',
+  'authGuard.loading': 'Wird geladen…',
+  'authGuard.failed': 'Speichern fehlgeschlagen: {error}',
   'command.unavailable': 'Dieser Host stellt den Befehl nicht bereit.',
 }
 
@@ -387,6 +415,13 @@ export const ru: Record<string, string> = {
 
   'session.missing': 'Сессия ещё не готова.',
   'command.failed': 'Команда не выполнена.',
+  'authGuard.title': 'Очистка cookie аутентификации',
+  'authGuard.description': 'Удаляет старые dsh-auth-* при обмене токена 303 и очищает после выхода из приложения.',
+  'authGuard.enabled': 'Включено',
+  'authGuard.disabled': 'Выключено',
+  'authGuard.hint': 'Выключение сразу останавливает очистку 303 и пропускает очистку при выходе. Изменения применяются сразу.',
+  'authGuard.loading': 'Загрузка…',
+  'authGuard.failed': 'Не удалось сохранить: {error}',
   'command.unavailable': 'Этот хост не предоставляет команду.',
 }
 
@@ -465,5 +500,12 @@ export const pt: Record<string, string> = {
 
   'session.missing': 'A sessão ainda não está pronta.',
   'command.failed': 'O comando falhou.',
+  'authGuard.title': 'Limpeza de cookies de autenticação',
+  'authGuard.description': 'Remove cookies dsh-auth-* antigos na troca de token 303 e limpa ao sair do aplicativo.',
+  'authGuard.enabled': 'Ativada',
+  'authGuard.disabled': 'Desativada',
+  'authGuard.hint': 'Desativar interrompe imediatamente a filtragem 303 e também ignora a limpeza ao sair. A alteração é imediata.',
+  'authGuard.loading': 'Carregando…',
+  'authGuard.failed': 'Falha ao salvar: {error}',
   'command.unavailable': 'Este host não fornece o comando.',
 }

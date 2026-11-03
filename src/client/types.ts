@@ -54,6 +54,21 @@ export interface ClientSessions {
   binding(sessionId: string): ClientSessionBinding | undefined
 }
 
+/** 插件详情页 subject 的最小面。 */
+export interface PluginDetailSubjectLike {
+  readonly kind?: string
+  readonly pkg?: { readonly name?: string }
+}
+
+/** 插件详情页插槽服务。 */
+export interface SlotsLike {
+  inject(name: string, callback: () => (() => void) | void): () => void
+  register(
+    options: { name: string; id: string; locale?: string },
+    component: (props: { subject: PluginDetailSubjectLike }) => unknown,
+  ): () => void
+}
+
 /** 客户端 cordis 上下文最小面。 */
 export interface ClientContext {
   effect(fn: () => (() => void) | void, label?: string): () => void
@@ -63,5 +78,6 @@ export interface ClientContext {
   }
   readonly commandUi: { decorate(decoration: CommandDecoration): () => void }
   readonly sessions: ClientSessions
+  readonly slots?: SlotsLike
 }
 

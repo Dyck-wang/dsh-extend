@@ -75,6 +75,7 @@ async function loadClient(fetchImpl: () => Promise<unknown>): Promise<Harness> {
   const registered: { ns: string; dictionaries: Record<string, Record<string, string>> }[] = []
   const commands: string[] = []
   const drafts: string[] = []
+  const slots: { readonly name: string; readonly id: string }[] = []
   const ctx = {
     effect: (fn: () => (() => void) | void): (() => void) => {
       const disposer = fn()
@@ -115,6 +116,16 @@ async function loadClient(fetchImpl: () => Promise<unknown>): Promise<Harness> {
         },
       }),
     },
+    slots: {
+      inject: (_name: string, callback: () => void) => {
+        callback()
+        return () => {}
+      },
+      register: (options: { name: string; id: string }) => {
+        slots.push({ name: options.name, id: options.id })
+        return () => {}
+      },
+    },
   }
 
   const exported = registration.factory(() => { throw new Error('client bundle should not require modules') }) as {
@@ -128,7 +139,7 @@ async function loadClient(fetchImpl: () => Promise<unknown>): Promise<Harness> {
 test('client bundle 以 dsh-extend 注册并导出 apply/inject', async () => {
   const harness = await loadClient(async () => ({ ok: true, json: async () => summary }))
   assert.equal(harness.loadId, 'dsh-extend')
-  assert.deepEqual([...harness.module.inject], ['commandUi', 'sessions', 'locale'])
+  assert.deepEqual([...harness.module.inject], ['commandUi', 'sessions', 'locale', 'slots'])
   assert.equal(harness.registered.length, 1)
   assert.equal(harness.registered[0]?.ns, 'dsh-extend')
   assert.ok(harness.registered[0]?.dictionaries.zh !== undefined)

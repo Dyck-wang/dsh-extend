@@ -1,7 +1,7 @@
 {
   "name": "dsh-extend",
-  "version": "0.3.2",
-  "description": "DSH 桌面端功能扩展：历史会话清理（/clean）、一键重启（/reboot）、AGENTS.md 生成（/init）、系统提示词管理（/prompt）、WSL 9P 路径的 write/edit 透明回退与窗口位置记忆",
+  "version": "0.3.3",
+  "description": "DSH 桌面端功能扩展：历史会话清理（/clean）、一键重启（/reboot）、AGENTS.md 生成（/init）、系统提示词管理（/prompt）、WSL 9P 路径的 write/edit 透明回退、认证 Cookie 清理与窗口位置记忆",
   "license": "MIT",
   "icon": "./icon.svg",
   "type": "module",
@@ -15,7 +15,6 @@
     "lib",
     "cordis.patch.yml",
     "locale/*.json",
-    "docs",
     "icon.svg",
     "tools",
     "README.md",
@@ -30,7 +29,8 @@
       "inject": [
         "@deepseek-ai/dsh-client-ui-commands",
         "@deepseek-ai/dsh-api-session-controller",
-        "@deepseek-ai/dsh-client-locale"
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-plugin-manager"
       ]
     }
   },

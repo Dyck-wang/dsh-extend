@@ -2,6 +2,6 @@
   "meta": {
     "title": "Extensões de funcionalidades",
     "description": "Limpeza do histórico de sessões, reinício com um clique, geração de AGENTS.md, gerenciamento de prompts do sistema, fallback de write/edit no WSL e memória da posição da janela para o app DSH",
-    "detail": "docs/DETAIL.md"
+    "detail": "README.en.md"
   }
 }

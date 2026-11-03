@@ -2,6 +2,6 @@
   "meta": {
     "title": "Extensions de fonctionnalités",
     "description": "Nettoyage de l'historique des sessions, redémarrage en un clic, génération d'AGENTS.md, gestion des prompts système, repli write/edit pour WSL et mémorisation de la position de la fenêtre pour l'application DSH",
-    "detail": "docs/DETAIL.md"
+    "detail": "README.en.md"
   }
 }

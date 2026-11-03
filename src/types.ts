@@ -180,7 +180,7 @@ export interface FsTargetLike {
 
 /** `ctx.fs` 的最小面（只用于把用户路径解析成真实目标）。 */
 export interface FileSystemLike {
-  resolve(path: string): Promise<FsTargetLike>
+  resolve(path: string, options?: { cwd?: string; signal?: AbortSignal }): Promise<FsTargetLike>
 }
 
 /** 工具执行上下文（只列取消信号）。 */

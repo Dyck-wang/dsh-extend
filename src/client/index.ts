@@ -10,6 +10,7 @@ import { de, es, fr, ja, pt, ru } from './locales-more.ts'
 import { clearRebootDrafts } from './drafts.ts'
 import { closePromptDialog, openPromptDialog } from './promptDialog.ts'
 import { closeCleanDialog, openCleanDialog, type CleanScope, type DeleteSummary } from './dialog.ts'
+import { installAuthGuardSection } from './authGuardSection.ts'
 import type { ClientContext, ClientSession, SelectOption } from './types.ts'
 
 /** 文案命名空间。 */
@@ -253,7 +254,7 @@ function cleanOptions(summary: SummaryPayload | undefined, t: Translate): readon
 }
 
 /** 必需服务。 */
-export const inject = ['commandUi', 'sessions', 'locale']
+export const inject = ['commandUi', 'sessions', 'locale', 'slots']
 
 /**
  * 挂载浏览器半。
@@ -263,6 +264,7 @@ export function apply(ctx: ClientContext): void {
   // 只注册字典，不改 DSH 的语言列表：可选语言由桌面端构建决定，等构建支持 ja/es/fr/de/ru/pt 后自动生效。
   ctx.effect(() => ctx.locale.register(NS, { zh, en, ja, es, fr, de, ru, pt }), 'dsh-extend: dictionaries')
   const t: Translate = ctx.locale.bind(NS)
+  installAuthGuardSection(ctx, t)
 
   // 强制重启可能来不及把清空后的草稿落盘，启动时先清一次，再补一次（等会话加载完）。
   sweepStaleRebootDrafts(ctx)

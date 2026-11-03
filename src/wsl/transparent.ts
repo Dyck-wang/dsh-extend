@@ -53,6 +53,16 @@ interface AgentWithFsLike {
   readonly ctx?: HostContext
 }
 
+/** agent 的会话（只用于取 cwd 兜底）。 */
+interface AgentWithSessionLike {
+  readonly session?: { readonly header?: { readonly cwd?: string } }
+}
+
+/** 会话工作目录服务。 */
+interface WorkingDirectoryLike {
+  ensure(agent: unknown, signal?: AbortSignal): Promise<string | undefined>
+}
+
 /**
  * 取这次调用所属 agent 的 fs 服务；根调用才回退到根 fs。
  * 用 service(agentCtx, 'fs')（内部走 ctx.get），与 write/edit 使用同一个服务。
@@ -61,6 +71,28 @@ function fsFor(exec: ToolExecutionLike, ctx: HostContext): FileSystemLike | unde
   const agentCtx = (exec.agent as AgentWithFsLike | undefined)?.ctx
   const scoped = agentCtx === undefined ? undefined : service<FileSystemLike>(agentCtx, 'fs')
   return scoped ?? service<FileSystemLike>(ctx, 'fs')
+}
+
+/**
+ * 取这次调用的会话工作目录，供相对路径解析使用。
+ * 与内置 `write` / `edit` 的 `sessionResolveOptions()` 一致：优先
+ * `workingDirectory.ensure(agent)`，取不到时回退会话头的 cwd。
+ */
+async function cwdFor(exec: ToolExecutionLike, ctx: HostContext): Promise<string | undefined> {
+  const agentCtx = (exec.agent as AgentWithFsLike | undefined)?.ctx
+  const workingDirectory = (agentCtx === undefined
+    ? undefined
+    : service<WorkingDirectoryLike>(agentCtx, 'workingDirectory'))
+    ?? service<WorkingDirectoryLike>(ctx, 'workingDirectory')
+  if (workingDirectory !== undefined && typeof workingDirectory.ensure === 'function') {
+    try {
+      const cwd = await workingDirectory.ensure(exec.agent, exec.signal)
+      if (cwd !== undefined && cwd !== '') return cwd
+    } catch {
+      // 取不到会话 cwd 时继续用会话头兜底。
+    }
+  }
+  return (exec.agent as AgentWithSessionLike | undefined)?.session?.header?.cwd
 }
 
 /** 读取文件文本；失败时返回 null（只用于 diff 基准，不阻断写入）。 */
@@ -89,10 +121,14 @@ async function writeValue(
   exec: ToolExecutionLike,
   fs: FileSystemLike,
   accept: (targetKey: string) => boolean,
+  cwd: string | undefined,
 ): Promise<unknown | undefined> {
   const input = tryParse(() => parseWriteArgs(exec.arguments))
   if (input === undefined) return undefined
-  const target = await fs.resolve(input.filePath).catch(() => undefined)
+  const target = await fs.resolve(input.filePath, {
+    ...(cwd === undefined ? {} : { cwd }),
+    ...(exec.signal === undefined ? {} : { signal: exec.signal }),
+  }).catch(() => undefined)
   if (target === undefined || !accept(target.targetKey)) return undefined
   const existed = await pathExists(target.targetKey)
   const before = existed ? await readTextOrNull(target.targetKey) : null
@@ -113,10 +149,14 @@ async function editValue(
   exec: ToolExecutionLike,
   fs: FileSystemLike,
   accept: (targetKey: string) => boolean,
+  cwd: string | undefined,
 ): Promise<unknown | undefined> {
   const input = tryParse(() => parseEditArgs(exec.arguments))
   if (input === undefined) return undefined
-  const target = await fs.resolve(input.filePath).catch(() => undefined)
+  const target = await fs.resolve(input.filePath, {
+    ...(cwd === undefined ? {} : { cwd }),
+    ...(exec.signal === undefined ? {} : { signal: exec.signal }),
+  }).catch(() => undefined)
   if (target === undefined || !accept(target.targetKey)) return undefined
   exec.signal?.throwIfAborted()
   const raw = await readFile(target.targetKey, 'utf8')
@@ -148,9 +188,10 @@ export function installWslExecuteHook(
     if (exec.name !== 'write' && exec.name !== 'edit') return next()
     const fs = fsFor(exec, ctx)
     if (fs === undefined) return next()
+    const cwd = await cwdFor(exec, ctx)
     const value = exec.name === 'write'
-      ? await writeValue(exec, fs, accept)
-      : await editValue(exec, fs, accept)
+      ? await writeValue(exec, fs, accept, cwd)
+      : await editValue(exec, fs, accept, cwd)
     if (value === undefined) return next()
     // normalizeDispatchResult 会用工具自己的 output 重新渲染 value。
     return { isError: false, value, content: [] }

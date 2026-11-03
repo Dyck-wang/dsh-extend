@@ -29,6 +29,7 @@ for (const rel of [
   'lib/index.js',
   'lib/client.js',
   'lib/relaunch.mjs',
+  'lib/cleanup.mjs',
   'lib/window-save.ps1',
   'lib/window-restore.ps1',
   'cordis.patch.yml',

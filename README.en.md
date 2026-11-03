@@ -82,7 +82,7 @@ Type `/init` in a repository (optionally followed by a short note). The plugin s
 
 ### WSL network drives: transparent fallback
 
-WSL's `\\wsl.localhost\...` / `\\wsl$\...` mounts (including mapped drives such as `W:`) are 9P filesystems:
+WSL's `\\wsl.localhost\...` / `\\wsl$\...` mounts, or a drive letter mapped to one, are 9P filesystems:
 they reject hard links and Windows security descriptors. DSH's built-in `write` / `edit` publish atomically
 (temp file + hard link) and copy the destination DACL, so they fail on those paths:
 
@@ -92,6 +92,8 @@ they reject hard links and Windows security descriptors. DSH's built-in `write` 
 The plugin listens to the global `tools/execute` waterfall: before a `write` / `edit` call it resolves the path;
 when the target is a WSL 9P mount it writes directly with `fs.writeFile` and returns a success result, otherwise
 it delegates to the original tool. Models keep using `write` / `edit`; arguments and presentation are unchanged.
+Relative paths (`x.txt`, `./x.txt`, `src/../x.txt`) resolve against the current session working directory before
+the 9P check, matching the built-in tools.
 
 **DSH contract risk**: `tools/execute` documents that a wrapper may change only `exec.signal`; this uses the
 broader "return a success result" behavior (DSH's `normalizeDispatchResult` re-validates and re-renders `value`
@@ -102,12 +104,39 @@ backend. In `workspace-write` / `read-only` mode, writes to WSL paths are theref
 the sandbox policy; under `danger-full-access` there is no additional difference. If you need sandbox
 enforcement, avoid targeting WSL paths for writes, or wait for the upstream `writeFileAtomic` 9P fix.
 
-The transparent fallback only recognizes `\\wsl.localhost\` / `\\wsl$\` (`W:` is resolved to a UNC path first);
-other filesystems without hard-link support are not detected automatically. Ordinary local paths still go
-entirely through the built-in tools.
+The transparent fallback only recognizes `\\wsl.localhost\` / `\\wsl$\` (a mapped drive resolves to a UNC path
+first); other filesystems without hard-link support are not detected automatically. Ordinary local paths still
+go entirely through the built-in tools.
 
-Note: the distro name behind `W:` is not necessarily `Ubuntu`; when using a UNC path, take the exact name
-from `wsl -l` (for example `Ubuntu-18.04`).
+Note: the distro name behind a mapped drive must come from `wsl -l`; do not hardcode a distro name.
+
+### Desktop auth cookie guard
+
+Each desktop launch mints a `dsh-auth-<hash(host:port)>` cookie for the new loopback port. Cookies are scoped by
+host, not port, so old cookies accumulate; once the request header exceeds Node's default 16 KiB limit the Host
+returns 431 before authentication, surfaced as `desktop welcome: Web authentication failed`.
+
+The plugin:
+
+- on the token-for-cookie 303, keeps the newly issued `dsh-auth-*` and appends `Max-Age=0` for every other
+  `dsh-auth-*` present in the request, keeping the jar at one cookie;
+- starts a detached cleaner that waits for the desktop main process to exit, then deletes `dsh-auth-%` rows from
+  Chromium's Cookies DB. It only runs after exit and only touches that prefix.
+
+If the current request is already over 16 KiB, that boot may
+still fail; the fallback cleaner removes the old cookies on exit and the next launch recovers. The manual
+launcher/cleanup script remains available. The cleaner only starts on Windows desktop; `dsh web` also benefits
+from the 303 pruning.
+
+The plugin detail page (Plugins → Feature Extensions) has an "Auth cookie cleanup" section with a live switch;
+the state lives in `<DSH_HOME>/.dsh-extend/config.json`:
+
+```json
+{
+  "version": 1,
+  "authGuard": { "enabled": true }
+}
+```
 
 ### Languages
 
@@ -135,7 +164,7 @@ On exit the plugin remembers the main window's position, size and maximized stat
 5. The plugin is not loaded until the app restarts; use the restart script inside the installed package:
 
    ```text
-   C:\Users\<you>\.dsh\profiles\desktop\node_modules\dsh-extend\tools\restart-dsh.cmd
+   %USERPROFILE%\.dsh\profiles\desktop\node_modules\dsh-extend\tools\restart-dsh.cmd
    ```
 
    (or quit from the tray and reopen). After that `/reboot` is available.
@@ -145,7 +174,7 @@ Uninstall: disable it on the Plugins page, then delete it.
 ## Verification
 
 ```powershell
-npm test        # 119 tests: parsing, inventory, scopes, picker, deletion, empty sessions, reboot planning, /init scan & prompt, /prompt overrides/commands/dialog, WSL tools/execute interception, 8-language dictionaries, window state, client bundle, restart helper
+npm test        # 129 tests: parsing, inventory, scopes, picker, deletion, empty sessions, reboot planning, /init scan & prompt, /prompt overrides/commands/dialog, WSL tools/execute interception, desktop auth cookie guard and detail-page switch, 8-language dictionaries, window state, client bundle, restart helper
 npm run smoke   # boots the real desktop Host with a temp DSH_HOME; checks plugin loading, client entry, summary/list/result routes
 ```
 
@@ -171,6 +200,7 @@ Code layout:
 | `src/init/` | `/init` repository scan, prompt and user-message construction |
 | `src/prompt/` | `/prompt` system-prompt overrides, state and panel routes |
 | `src/wsl/` | transparent `write` / `edit` overrides and 9P path detection |
+| `src/auth/` | 303 auth-cookie pruning and the exit-time fallback cleaner |
 | `src/window/` | window state read/write, `save.ps1` / `restore.ps1` |
 | `src/client/` | browser half: `/clean` picker, `/prompt` manager, direct `/reboot` action |
 | `scripts/` | build and artifact verification |
